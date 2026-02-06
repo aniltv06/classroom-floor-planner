@@ -667,6 +667,127 @@
             color: #495057;
         }
 
+        /* Help Modal */
+        #help-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .help-modal-content {
+            width: 600px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 28px;
+        }
+        .help-section {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+        .help-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        .help-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0 0 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .help-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .help-list li {
+            padding: 8px 0;
+            color: #495057;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .help-list li strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        .help-list.shortcuts li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .help-list kbd {
+            background: linear-gradient(to bottom, #ffffff, #f6f8fa);
+            border: 1px solid #d1d5da;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 12px;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+            color: #2c3e50;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            white-space: nowrap;
+        }
+        .help-text {
+            color: #495057;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0 0 16px 0;
+        }
+        .contact-box {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        .contact-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+        .email-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(to bottom, #4a90e2, #357abd);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 4px rgba(74, 144, 226, 0.3);
+        }
+        .email-link:hover {
+            background: linear-gradient(to bottom, #357abd, #2b6cb0);
+            box-shadow: 0 3px 6px rgba(74, 144, 226, 0.4);
+            transform: translateY(-1px);
+        }
+        .version-section {
+            text-align: center;
+            padding-top: 16px;
+            border-bottom: none;
+        }
+        .version-info {
+            font-size: 12px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
         /* Room Tabs */
         .room-tabs {
             display: flex;
@@ -763,7 +884,7 @@
                 background: white;
                 display: block;
             }
-            header, #context-menu, #coord-display, #settings-modal, .room-tabs { display: none !important; }
+            header, #context-menu, #coord-display, #settings-modal, #help-modal, .room-tabs { display: none !important; }
             .ruler { display: none !important; }
             #major-grid, #center-marker { display: none !important; }
             #workspace {
@@ -834,6 +955,7 @@
         </div>
         <button class="primary" onclick="downloadImage()" title="Download as PNG image">📥 Download Image</button>
         <button class="primary" onclick="window.print()">🖨️ Print / Save PDF</button>
+        <button onclick="toggleHelp()" title="Help & Support">❓ Help</button>
     </div>
 </header>
 
@@ -876,6 +998,65 @@
         <div class="setting-row">
             <label>All Tables</label>
             <input type="color" value="#fff3e0" onchange="updateGlobalColor('table', this.value)">
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div id="help-modal">
+    <div class="modal-content help-modal-content">
+        <div class="modal-header">
+            <span>Help & Support</span>
+            <button class="close-btn" onclick="toggleHelp()">×</button>
+        </div>
+
+        <div class="help-section">
+            <h3>🚀 Quick Start</h3>
+            <ul class="help-list">
+                <li><strong>Add Items:</strong> Click toolbar buttons to add furniture and fixtures</li>
+                <li><strong>Move Items:</strong> Click and drag items to reposition them</li>
+                <li><strong>Edit Items:</strong> Single-click to select and use context menu</li>
+                <li><strong>Double-Click:</strong> Double-click items to quickly rename them</li>
+            </ul>
+        </div>
+
+        <div class="help-section">
+            <h3>⌨️ Keyboard Shortcuts</h3>
+            <ul class="help-list shortcuts">
+                <li><kbd>Delete</kbd> or <kbd>Backspace</kbd> — Delete selected item</li>
+                <li><kbd>Ctrl/Cmd + Z</kbd> — Undo</li>
+                <li><kbd>Ctrl/Cmd + Y</kbd> or <kbd>Ctrl/Cmd + Shift + Z</kbd> — Redo</li>
+                <li><kbd>Ctrl/Cmd + D</kbd> — Duplicate selected item</li>
+                <li><kbd>R</kbd> — Rotate selected item 90°</li>
+                <li><kbd>Esc</kbd> — Deselect item</li>
+            </ul>
+        </div>
+
+        <div class="help-section">
+            <h3>💡 Tips & Tricks</h3>
+            <ul class="help-list">
+                <li>Items snap to a 24px grid for precise alignment</li>
+                <li>Use the Grid and Borders buttons for measurement guides</li>
+                <li>Doors and windows can be placed on canvas edges</li>
+                <li>Furniture maintains an 8px margin from edges</li>
+                <li>Create multiple rooms using the tabs at the top</li>
+                <li>Double-click room tabs to rename them</li>
+            </ul>
+        </div>
+
+        <div class="help-section report-section">
+            <h3>🐛 Report Issues</h3>
+            <p class="help-text">Found a bug or have a suggestion? We'd love to hear from you!</p>
+            <div class="contact-box">
+                <div class="contact-name">Nishitha Thatha Anil</div>
+                <a href="mailto:nishitha.1190@gmail.com?subject=Classroom%20Planner%20Feedback&body=Hi%20Nishitha,%0D%0A%0D%0AI'm%20reporting%20an%20issue%20with%20the%20Classroom%20Planner:%0D%0A%0D%0ADescription:%0D%0A[Please%20describe%20the%20issue]%0D%0A%0D%0ASteps%20to%20reproduce:%0D%0A1.%20%0D%0A2.%20%0D%0A3.%20%0D%0A%0D%0AExpected%20behavior:%0D%0A[What%20should%20happen]%0D%0A%0D%0AActual%20behavior:%0D%0A[What%20actually%20happened]%0D%0A%0D%0ABrowser:%20[e.g.%20Chrome,%20Safari,%20Firefox]%0D%0A" class="email-link">
+                    📧 nishitha.1190@gmail.com
+                </a>
+            </div>
+        </div>
+
+        <div class="help-section version-section">
+            <div class="version-info">Version 2.0 • Multi-Room Support</div>
         </div>
     </div>
 </div>
@@ -998,6 +1179,14 @@
     settingsModal.addEventListener('click', (e) => {
         if(e.target === settingsModal) {
             toggleSettings();
+        }
+    });
+
+    // Close help modal on backdrop click
+    const helpModal = document.getElementById('help-modal');
+    helpModal.addEventListener('click', (e) => {
+        if(e.target === helpModal) {
+            toggleHelp();
         }
     });
 
@@ -1587,7 +1776,12 @@
     function toggleSettings() {
         settingsModal.style.display = (settingsModal.style.display === 'flex') ? 'none' : 'flex';
     }
-    
+
+    function toggleHelp() {
+        const helpModal = document.getElementById('help-modal');
+        helpModal.style.display = (helpModal.style.display === 'flex') ? 'none' : 'flex';
+    }
+
     function updateGlobalColor(type, color) {
         saveState();
         let selector = '';
@@ -1833,6 +2027,7 @@
         selectedItem = null;
         menu.style.display = 'none';
         settingsModal.style.display = 'none';
+        document.getElementById('help-modal').style.display = 'none';
     }
 
     function updateMenuPos() {
