@@ -396,10 +396,73 @@
         .setting-row label { font-size: 14px; color: #333; }
         .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #666; }
 
+        /* Room Tabs */
+        .room-tabs {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            background: #f5f5f7;
+            padding: 5px 10px;
+            border-bottom: 1px solid #ddd;
+            overflow-x: auto;
+        }
+        .room-tab {
+            background: white;
+            border: 1px solid #d1d1d6;
+            padding: 5px 12px;
+            border-radius: 6px 6px 0 0;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            position: relative;
+        }
+        .room-tab:hover { background: #e5e5ea; }
+        .room-tab.active {
+            background: #007aff;
+            color: white;
+            border-color: #0062cc;
+        }
+        .room-tab .close-tab {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+        }
+        .room-tab.active .close-tab { color: white; }
+        .room-tab .close-tab:hover {
+            background: rgba(0,0,0,0.1);
+        }
+        .add-room-btn {
+            background: #f5f5f7;
+            border: 1px dashed #d1d1d6;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #666;
+        }
+        .add-room-btn:hover {
+            background: #e5e5ea;
+            border-color: #999;
+        }
+
         @media print {
             @page { size: landscape; margin: 0.5cm; }
             body { background: white; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 98vh; }
-            header, #context-menu, #coord-display, #settings-modal { display: none !important; }
+            header, #context-menu, #coord-display, #settings-modal, .room-tabs { display: none !important; }
             .ruler { display: none !important; }
             #major-grid, #center-marker { display: none !important; }
             #workspace { padding: 0; margin: 0; background: white; display: block; overflow: visible; height: auto; width: auto; }
@@ -448,6 +511,10 @@
     </div>
 </header>
 
+<div class="room-tabs" id="room-tabs">
+    <!-- Room tabs will be rendered here dynamically -->
+</div>
+
 <div id="workspace">
     <div id="canvas-container">
         <!-- Rulers & Grid -->
@@ -458,89 +525,7 @@
         <div id="major-grid"></div>
         <div id="center-marker"></div>
 
-        <!-- Zones -->
-        <div class="item zone-text" style="top: 216px; left: 802px; width: 98px; height: 26px; transform: rotate(-90deg);" data-r="-90">Zone 1</div>
-        <div class="item zone-text" style="top: 24px; left: 408px; width: 149px; height: 50px;">Zone 2</div>
-        <div class="item zone-text" style="top: 480px; left: 0px; width: 137px; height: 50px; transform: rotate(-90deg);" data-r="-90">Zone 3</div>
-
-        <!-- --- USER DEFINED ITEMS --- -->
-
-        <!-- 1. Bed (Student 1) -->
-        <div class="item bed" style="top: 24px; left: 72px; width: 100px; height: 48px;">
-            <div class="pillow"><span>Bed</span></div>
-            <div class="name">Student 1</div>
-        </div>
-        
-        <!-- 2. Bed (Student 2) -->
-        <div class="item bed" style="top: 192px; left: 72px; width: 100px; height: 48px;">
-            <div class="pillow"><span>Bed</span></div>
-            <div class="name">Student 2</div>
-        </div>
-
-        <!-- 3. Bed (Student 3) - Vertical -->
-        <div class="item bed vertical" style="top: 24px; left: 312px; width: 48px; height: 100px;">
-            <div class="pillow"><span>Bed</span></div>
-            <div class="name">Student 3</div>
-        </div>
-
-        <!-- 4. Bed (Student 4) - Vertical -->
-        <div class="item bed vertical" style="top: 24px; left: 552px; width: 48px; height: 100px;">
-            <div class="pillow"><span>Bed</span></div>
-            <div class="name">Student 4</div>
-        </div>
-
-        <!-- 5. Bed (Student 5) -->
-        <div class="item bed" style="top: 120px; left: 744px; width: 100px; height: 48px;">
-            <div class="pillow"><span>Bed</span></div>
-            <div class="name">Student 5</div>
-        </div>
-
-        <!-- 6. Bed (Student 6) -->
-        <div class="item bed" style="top: 288px; left: 768px; width: 100px; height: 60px;">
-            <div class="pillow"><span>Bed</span></div>
-            <div class="name">Student 6</div>
-        </div>
-
-        <!-- 7. Bed (Student 7) -->
-        <div class="item bed" style="top: 192px; left: 408px; width: 100px; height: 60px;">
-            <div class="pillow"><span>Bed</span></div>
-            <div class="name">Student 7</div>
-        </div>
-
-        <!-- 8. Bed (Student 8) - Vertical -->
-        <div class="item bed vertical" style="top: 240px; left: 600px; width: 60px; height: 100px;">
-            <div class="pillow"><span>Bed</span></div>
-            <div class="name">Student 8</div>
-        </div>
-
-        <!-- --- SHELVES --- -->
-        <div class="item shelf vertical" style="top: 0px; left: 240px; width: 64px; height: 164px;">Shelf</div>
-        <div class="item shelf vertical" style="top: 0px; left: 624px; width: 64px; height: 164px;">Shelf</div>
-        <div class="item shelf" style="top: 264px; left: 0px; width: 188px; height: 40px;">Shelf</div>
-        <div class="item shelf" style="top: 264px; left: 312px; width: 284px; height: 52px;">Shelf</div>
-        <div class="item shelf" style="top: 360px; left: 640px; width: 260px; height: 40px;">Shelf</div>
-        <div class="item shelf" style="top: 660px; left: 456px; width: 140px; height: 40px;">Shelf</div>
-
-        <!-- --- TABLES --- -->
-        <div class="item table-rect" style="top: 0px; left: 744px; width: 84px; height: 30px;">Table</div>
-        <div class="item table-rect" style="top: 432px; left: 336px; width: 292px; height: 126px;">Table</div>
-        <div class="item table-rect" style="top: 646px; left: 288px; width: 72px; height: 54px;">Table</div>
-        
-        <div class="item half-moon vertical" style="top: 432px; left: 96px; width: 230px; height: 150px;">
-            <svg viewBox="0 0 140 80" preserveAspectRatio="none">
-                <path d="M 0,80 A 70,70 0 0,1 140,80 L 100,80 A 30,30 0 0,0 40,80 Z" 
-                      fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
-            </svg>
-            <span style="font-size:11px; pointer-events:none; font-weight:600;">Table</span>
-        </div>
-
-        <!-- --- DOORS --- -->
-        <div class="item door" style="top: 432px; left: 840px;"><div class="door-panel"></div><div class="door-swing"></div></div>
-        <div class="item door" style="top: 528px; left: 840px;"><div class="door-panel"></div><div class="door-swing"></div></div>
-        <div class="item door" style="top: 640px; left: 192px;"><div class="door-panel"></div><div class="door-swing"></div></div>
-
-        <!-- Windows -->
-        <div class="item window vertical" style="top: 72px; left: 0px; width: 15px; height: 100px;"></div>
+        <!-- Default layout items will be loaded here -->
 
     </div>
 </div>
@@ -612,6 +597,9 @@
 </div>
 
 <script>
+    // Default layout template
+    const DEFAULT_LAYOUT = {"items":["<div class=\"item zone-text\" style=\"top: 216px; left: 802px; width: 98px; height: 26px; transform: rotate(-90deg);\" data-r=\"-90\">Zone 1</div>","<div class=\"item zone-text\" style=\"top: 24px; left: 384px; width: 149px; height: 50px;\">Zone 2</div>","<div class=\"item zone-text\" style=\"top: 480px; left: 0px; width: 137px; height: 50px; transform: rotate(-90deg);\" data-r=\"-90\">Zone 3</div>","<div class=\"item bed\" style=\"top: 72px; left: 72px; width: 100px; height: 36px;\">\n            <div class=\"pillow\"><span>Bed</span></div>\n            <div class=\"name\">Student 1</div>\n        </div>","<div class=\"item bed\" style=\"top: 216px; left: 72px; width: 100px; height: 36px;\">\n            <div class=\"pillow\"><span>Bed</span></div>\n            <div class=\"name\">Student 2</div>\n        </div>","<div class=\"item bed vertical\" style=\"top: 24px; left: 312px; width: 48px; height: 100px;\">\n            <div class=\"pillow\"><span>Bed</span></div>\n            <div class=\"name\">Student 3</div>\n        </div>","<div class=\"item bed vertical\" style=\"top: 24px; left: 552px; width: 48px; height: 100px;\">\n            <div class=\"pillow\"><span>Bed</span></div>\n            <div class=\"name\">Student 4</div>\n        </div>","<div class=\"item bed\" style=\"top: 120px; left: 768px; width: 100px; height: 48px;\" data-r=\"180\">\n            <div class=\"pillow\"><span>Bed</span></div>\n            <div class=\"name\">Student 5</div>\n        </div>","<div class=\"item bed\" style=\"top: 312px; left: 768px; width: 100px; height: 36px;\">\n            <div class=\"pillow\"><span>Bed</span></div>\n            <div class=\"name\">Student 6</div>\n        </div>","<div class=\"item bed\" style=\"top: 216px; left: 408px; width: 100px; height: 36px;\">\n            <div class=\"pillow\"><span>Bed</span></div>\n            <div class=\"name\">Student 7</div>\n        </div>","<div class=\"item bed vertical\" style=\"top: 240px; left: 600px; width: 48px; height: 100px;\">\n            <div class=\"pillow\"><span>Bed</span></div>\n            <div class=\"name\">Student 8</div>\n        </div>","<div class=\"item shelf vertical\" style=\"top: 0px; left: 240px; width: 64px; height: 164px;\">Shelf</div>","<div class=\"item shelf vertical\" style=\"top: 0px; left: 624px; width: 64px; height: 164px;\">Shelf</div>","<div class=\"item shelf\" style=\"top: 264px; left: 0px; width: 188px; height: 40px;\">Shelf</div>","<div class=\"item shelf\" style=\"top: 264px; left: 312px; width: 284px; height: 52px;\">Shelf</div>","<div class=\"item shelf\" style=\"top: 360px; left: 640px; width: 260px; height: 40px;\">Shelf</div>","<div class=\"item shelf\" style=\"top: 660px; left: 456px; width: 140px; height: 40px;\">Shelf</div>","<div class=\"item table-rect\" style=\"top: 0px; left: 744px; width: 84px; height: 30px;\">Table</div>","<div class=\"item table-rect\" style=\"top: 646px; left: 288px; width: 72px; height: 54px;\">Table</div>","<div class=\"item half-moon vertical\" style=\"top: 384px; left: 144px; width: 158px; height: 78px;\">\n            <svg viewBox=\"0 0 140 80\" preserveAspectRatio=\"none\">\n                <path d=\"M 0,80 A 70,70 0 0,1 140,80 L 100,80 A 30,30 0 0,0 40,80 Z\" fill=\"#fff3e0\" stroke=\"#ff9800\" stroke-width=\"1\"></path>\n            </svg>\n            <span style=\"font-size:11px; pointer-events:none; font-weight:600;\">Shelf</span>\n        </div>","<div class=\"item door\" style=\"top: 432px; left: 840px; transform: rotate(180deg);\" data-r=\"180\"><div class=\"door-panel\"></div><div class=\"door-swing\"></div></div>","<div class=\"item door\" style=\"top: 528px; left: 840px; transform: rotate(180deg);\" data-r=\"180\"><div class=\"door-panel\"></div><div class=\"door-swing\"></div></div>","<div class=\"item door\" style=\"top: 640px; left: 192px; transform: rotate(270deg);\" data-r=\"270\"><div class=\"door-panel\"></div><div class=\"door-swing\"></div></div>","<div class=\"item window vertical\" style=\"top: 72px; left: 0px; width: 15px; height: 100px;\"></div>","<div class=\"item half-moon\" style=\"top: 360px; left: 288px; width: 344px; height: 176px;\"><svg viewBox=\"0 0 140 80\" preserveAspectRatio=\"none\">\n                            <path d=\"M 0,80 A 70,70 0 0,1 140,80 L 100,80 A 30,30 0 0,0 40,80 Z\" fill=\"#fff3e0\" stroke=\"#ff9800\" stroke-width=\"1\"></path>\n                        </svg>\n                        <span style=\"font-size:11px; pointer-events:none; font-weight:600;\">Table</span></div>"],"borderWidth":1};
+
     const container = document.getElementById("canvas-container");
     const menu = document.getElementById("context-menu");
     const btnScale = document.getElementById("btn-scale");
@@ -622,6 +610,12 @@
     const coordDisplay = document.getElementById("coord-display");
     const centerMarker = document.getElementById("center-marker");
     const settingsModal = document.getElementById("settings-modal");
+    const roomTabsContainer = document.getElementById("room-tabs");
+
+    // Multi-room state
+    let rooms = [];
+    let currentRoomId = null;
+    let roomIdCounter = 1;
     
     // Undo/Redo State
     const MAX_HISTORY = 50; // Limit history to prevent memory leaks
@@ -636,8 +630,11 @@
 
     // --- Init ---
     initRulers();
-    saveState(); // Initial save
-    
+
+    // Initialize with first room
+    createRoom('Room 1', true);
+    renderRoomTabs();
+
     // Re-bind listeners function
     function rebindListeners() {
         document.querySelectorAll('.item').forEach(makeDraggable);
@@ -714,31 +711,207 @@
         }
     });
 
+    // --- Multi-Room Management ---
+    function createRoom(name, loadDefault = false) {
+        const roomId = roomIdCounter++;
+        const newRoom = {
+            id: roomId,
+            name: name || `Room ${roomId}`,
+            content: '',
+            borderWidth: 1,
+            history: [],
+            historyIndex: -1
+        };
+
+        rooms.push(newRoom);
+        currentRoomId = roomId;
+
+        // Load default layout if requested
+        if(loadDefault) {
+            loadRoomLayout(DEFAULT_LAYOUT);
+        } else {
+            // Clear canvas
+            document.querySelectorAll('.item').forEach(el => el.remove());
+        }
+
+        saveCurrentRoomState();
+        return roomId;
+    }
+
+    function switchRoom(roomId) {
+        if(currentRoomId === roomId) return;
+
+        // Save current room state before switching
+        saveCurrentRoomState();
+
+        // Switch to new room
+        currentRoomId = roomId;
+        const room = rooms.find(r => r.id === roomId);
+        if(!room) return;
+
+        // Restore room history and state
+        history = room.history;
+        historyIndex = room.historyIndex;
+        borderWidth = room.borderWidth;
+        document.documentElement.style.setProperty('--item-border-width', borderWidth + 'px');
+
+        // Load room content
+        document.querySelectorAll('.item').forEach(el => el.remove());
+        container.innerHTML = room.content;
+
+        // Re-initialize rulers and rebind listeners
+        initRulers();
+        rebindListeners();
+        deselect();
+        updateUndoRedoButtons();
+        renderRoomTabs();
+    }
+
+    function deleteRoom(roomId, event) {
+        if(event) {
+            event.stopPropagation();
+        }
+
+        if(rooms.length <= 1) {
+            alert('Cannot delete the last room. At least one room is required.');
+            return;
+        }
+
+        if(!confirm('Delete this room? This action cannot be undone.')) {
+            return;
+        }
+
+        const roomIndex = rooms.findIndex(r => r.id === roomId);
+        if(roomIndex === -1) return;
+
+        rooms.splice(roomIndex, 1);
+
+        // Switch to another room if we deleted the current room
+        if(currentRoomId === roomId) {
+            const newRoom = rooms[Math.max(0, roomIndex - 1)];
+            switchRoom(newRoom.id);
+        } else {
+            renderRoomTabs();
+        }
+    }
+
+    function renameRoom(roomId) {
+        const room = rooms.find(r => r.id === roomId);
+        if(!room) return;
+
+        const newName = prompt('Rename room:', room.name);
+        if(newName && newName.trim() !== '') {
+            room.name = newName.trim().substring(0, 50);
+            renderRoomTabs();
+        }
+    }
+
+    function saveCurrentRoomState() {
+        const room = rooms.find(r => r.id === currentRoomId);
+        if(!room) return;
+
+        room.content = container.innerHTML;
+        room.borderWidth = borderWidth;
+        room.history = [...history];
+        room.historyIndex = historyIndex;
+    }
+
+    function renderRoomTabs() {
+        roomTabsContainer.innerHTML = '';
+
+        rooms.forEach(room => {
+            const tab = document.createElement('div');
+            tab.className = 'room-tab' + (room.id === currentRoomId ? ' active' : '');
+            tab.onclick = () => switchRoom(room.id);
+            tab.ondblclick = () => renameRoom(room.id);
+            tab.title = 'Double-click to rename';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = room.name;
+            tab.appendChild(nameSpan);
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'close-tab';
+            closeBtn.innerHTML = '×';
+            closeBtn.title = 'Close room';
+            closeBtn.onclick = (e) => deleteRoom(room.id, e);
+            tab.appendChild(closeBtn);
+
+            roomTabsContainer.appendChild(tab);
+        });
+
+        // Add new room button
+        const addBtn = document.createElement('button');
+        addBtn.className = 'add-room-btn';
+        addBtn.innerHTML = '+';
+        addBtn.title = 'Add new room';
+        addBtn.onclick = () => {
+            const roomName = prompt('New room name:', `Room ${roomIdCounter}`);
+            if(roomName && roomName.trim() !== '') {
+                createRoom(roomName.trim());
+                renderRoomTabs();
+            }
+        };
+        roomTabsContainer.appendChild(addBtn);
+    }
+
+    function loadRoomLayout(data) {
+        if(!data || !data.items || !Array.isArray(data.items)) return;
+
+        // Clear existing items
+        document.querySelectorAll('.item').forEach(el => el.remove());
+
+        // Load items
+        data.items.forEach(html => {
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            const newItem = temp.firstChild;
+            if(newItem && newItem.tagName === 'DIV' && newItem.classList.contains('item')) {
+                container.appendChild(newItem);
+            }
+        });
+
+        // Restore border width
+        if(data.borderWidth && typeof data.borderWidth === 'number') {
+            borderWidth = Math.max(1, Math.min(3, data.borderWidth));
+            document.documentElement.style.setProperty('--item-border-width', borderWidth + 'px');
+        }
+
+        rebindListeners();
+        saveState();
+    }
+
     // --- Save & Load ---
     function saveLayout() {
-        // Clone the container to clean it up before saving (remove rulers, etc if needed, but innerHTML is fine)
-        // We really just want the items.
-        // A better approach for robust app is JSON model, but for this tool, saving the items HTML structure is simple.
-        // We will save the innerHTML of canvas-container *minus* the grid/ruler elements if we want to be clean,
-        // OR we just save the whole innerHTML and when loading, we restore and re-init rulers.
-        
-        // Actually, let's just save the "items" specifically.
-        const items = [];
-        document.querySelectorAll('.item').forEach(el => {
-            items.push(el.outerHTML);
-        });
-        
-        const data = {
-            items: items,
-            borderWidth: borderWidth
+        // Save current room state first
+        saveCurrentRoomState();
+
+        // Prepare multi-room data
+        const projectData = {
+            version: 2, // Version 2 = multi-room support
+            rooms: rooms.map(room => ({
+                id: room.id,
+                name: room.name,
+                items: [],
+                borderWidth: room.borderWidth
+            })),
+            currentRoomId: currentRoomId
         };
-        
-        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+
+        // Extract items for each room
+        rooms.forEach((room, index) => {
+            const tempContainer = document.createElement('div');
+            tempContainer.innerHTML = room.content;
+            const items = tempContainer.querySelectorAll('.item');
+            projectData.rooms[index].items = Array.from(items).map(el => el.outerHTML);
+        });
+
+        const blob = new Blob([JSON.stringify(projectData)], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
-        
+
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'classroom-layout.json';
+        a.download = 'classroom-project.json';
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -770,41 +943,19 @@
                 if(!data || typeof data !== 'object') {
                     throw new Error('Invalid file format: Data must be an object');
                 }
-                if(!Array.isArray(data.items)) {
-                    throw new Error('Invalid file format: Missing items array');
+
+                // Check if it's multi-room (v2) or single room (v1)
+                if(data.version === 2 && data.rooms && Array.isArray(data.rooms)) {
+                    // Multi-room project
+                    loadMultiRoomProject(data);
+                } else if(data.items && Array.isArray(data.items)) {
+                    // Single room (old format) - convert to current room
+                    loadSingleRoomLayout(data);
+                } else {
+                    throw new Error('Invalid file format: Missing required data');
                 }
 
-                // Clear existing items but KEEP rulers/grid structure
-                document.querySelectorAll('.item').forEach(el => el.remove());
-
-                // Add new items with sanitization
-                let loadedCount = 0;
-                data.items.forEach(html => {
-                    try {
-                        // Create a temp container to parse HTML string
-                        const temp = document.createElement('div');
-                        temp.innerHTML = html;
-                        const newItem = temp.firstChild;
-
-                        // Basic validation - must be a div with item class
-                        if(newItem && newItem.tagName === 'DIV' && newItem.classList.contains('item')) {
-                            container.appendChild(newItem);
-                            loadedCount++;
-                        }
-                    } catch(itemErr) {
-                        console.warn('Skipped invalid item:', itemErr);
-                    }
-                });
-
-                // Restore settings
-                if(data.borderWidth && typeof data.borderWidth === 'number') {
-                    borderWidth = Math.max(1, Math.min(3, data.borderWidth));
-                    document.documentElement.style.setProperty('--item-border-width', borderWidth + 'px');
-                }
-
-                rebindListeners();
-                saveState(); // Save loaded state to history
-                alert(`Layout loaded successfully! ${loadedCount} items restored.`);
+                alert('Layout loaded successfully!');
             } catch(err) {
                 alert('Error loading file: ' + err.message + '\n\nPlease ensure you selected a valid classroom layout file.');
                 console.error('Load error:', err);
@@ -815,6 +966,87 @@
         };
         reader.readAsText(file);
         input.value = ''; // Reset input
+    }
+
+    function loadMultiRoomProject(data) {
+        // Clear current rooms
+        rooms = [];
+        currentRoomId = null;
+
+        // Recreate rooms from data
+        let maxId = 0;
+        data.rooms.forEach(roomData => {
+            const roomId = roomData.id || roomIdCounter++;
+            maxId = Math.max(maxId, roomId);
+
+            const room = {
+                id: roomId,
+                name: roomData.name || `Room ${roomId}`,
+                content: '',
+                borderWidth: roomData.borderWidth || 1,
+                history: [],
+                historyIndex: -1
+            };
+
+            // Build room content from items
+            const tempContainer = document.createElement('div');
+            if(roomData.items && Array.isArray(roomData.items)) {
+                roomData.items.forEach(html => {
+                    const temp = document.createElement('div');
+                    temp.innerHTML = html;
+                    const item = temp.firstChild;
+                    if(item && item.tagName === 'DIV' && item.classList.contains('item')) {
+                        tempContainer.appendChild(item);
+                    }
+                });
+            }
+            room.content = tempContainer.innerHTML;
+
+            rooms.push(room);
+        });
+
+        roomIdCounter = maxId + 1;
+
+        // Switch to the saved current room or first room
+        const targetRoomId = data.currentRoomId || rooms[0].id;
+        switchRoom(targetRoomId);
+    }
+
+    function loadSingleRoomLayout(data) {
+        // Replace current room's content with loaded data
+        if(!Array.isArray(data.items)) {
+            throw new Error('Invalid file format: Missing items array');
+        }
+
+        // Clear existing items
+        document.querySelectorAll('.item').forEach(el => el.remove());
+
+        // Add new items with sanitization
+        let loadedCount = 0;
+        data.items.forEach(html => {
+            try {
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                const newItem = temp.firstChild;
+
+                if(newItem && newItem.tagName === 'DIV' && newItem.classList.contains('item')) {
+                    container.appendChild(newItem);
+                    loadedCount++;
+                }
+            } catch(itemErr) {
+                console.warn('Skipped invalid item:', itemErr);
+            }
+        });
+
+        // Restore settings
+        if(data.borderWidth && typeof data.borderWidth === 'number') {
+            borderWidth = Math.max(1, Math.min(3, data.borderWidth));
+            document.documentElement.style.setProperty('--item-border-width', borderWidth + 'px');
+        }
+
+        rebindListeners();
+        saveState();
+        saveCurrentRoomState();
     }
 
     // --- History System ---
@@ -835,6 +1067,7 @@
         }
 
         updateUndoRedoButtons();
+        saveCurrentRoomState(); // Save room state after every change
     }
 
     function undo() {
