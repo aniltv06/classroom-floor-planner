@@ -484,14 +484,50 @@
         @media print {
             @page {
                 size: letter landscape;
-                margin: 0.5cm;
+                margin: 0.4cm;
             }
-            body { background: white; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 98vh; }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+            body {
+                background: white;
+                display: block;
+            }
             header, #context-menu, #coord-display, #settings-modal, .room-tabs { display: none !important; }
             .ruler { display: none !important; }
             #major-grid, #center-marker { display: none !important; }
-            #workspace { padding: 0; margin: 0; background: white; display: block; overflow: visible; height: auto; width: auto; }
-            #canvas-container { box-shadow: none; background-image: none; border: 2px solid #333; margin: 0; width: 900px !important; height: 700px !important; }
+            #workspace {
+                padding: 0;
+                margin: 0;
+                background: white;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                overflow: hidden;
+                height: 100%;
+                width: 100%;
+                page-break-after: avoid;
+                page-break-before: avoid;
+                page-break-inside: avoid;
+            }
+            #canvas-container {
+                box-shadow: none;
+                background-image: none;
+                border: 1px solid #333;
+                margin: 0;
+                width: 900px !important;
+                height: 700px !important;
+                page-break-inside: avoid;
+                position: relative;
+            }
             .bed { border-color: #000 !important; }
             .shelf { border-color: #000 !important; }
             .window { border-color: #000 !important; }
