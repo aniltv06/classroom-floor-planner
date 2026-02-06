@@ -313,6 +313,32 @@
             color: #333;
         }
 
+        .curved-shelf {
+            width: 140px; height: 80px; background: transparent; border: none;
+            display: flex; justify-content: center; align-items: flex-start; padding-top: 25px;
+            position: relative;
+        }
+        .curved-shelf svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; z-index: -1; }
+        .curved-shelf path { stroke-width: var(--item-border-width); vector-effect: non-scaling-stroke; }
+        .curved-shelf span {
+            font-size: 14px;
+            pointer-events: none;
+            font-weight: 700;
+            z-index: 1;
+            color: #333;
+        }
+        .curved-shelf.vertical {
+            align-items: center;
+            padding-top: 0;
+            padding-left: 0;
+            justify-content: center;
+        }
+        .curved-shelf.vertical svg { transform: rotate(90deg); }
+        .curved-shelf.vertical span {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+
         .door { width: 60px; height: 60px; pointer-events: auto; background: transparent !important; border:none !important; }
         .door-panel {
             position: absolute; left: 0; top: 0; width: 10px; height: 100%;
@@ -556,6 +582,7 @@
         <div class="btn-group">
             <button onclick="addItem('bed')">🛏️ Bed</button>
             <button onclick="addItem('shelf')">📚 Shelf</button>
+            <button onclick="addItem('curved-shelf')">📚 Curved Shelf</button>
             <button onclick="addItem('table')">🔲 Table</button>
             <button onclick="addItem('half-moon')">🌙 Arc Table</button>
         </div>
@@ -1328,12 +1355,12 @@
         saveState();
         let selector = '';
         if(type === 'bed') selector = '.bed';
-        else if(type === 'shelf') selector = '.shelf';
+        else if(type === 'shelf') selector = '.shelf, .curved-shelf';
         else if(type === 'table') selector = '.table-rect, .half-moon';
-        
+
         const items = document.querySelectorAll(selector);
         items.forEach(item => {
-            if(item.classList.contains('half-moon')) {
+            if(item.classList.contains('half-moon') || item.classList.contains('curved-shelf')) {
                 const path = item.querySelector('path');
                 if(path) path.setAttribute('fill', color);
             } else {
@@ -1442,6 +1469,14 @@
                         </svg>
                         <span style="font-size:14px; pointer-events:none; font-weight:700;">Table</span>`;
                 break;
+            case 'curved-shelf':
+                cls += 'curved-shelf';
+                html = `<svg viewBox="0 0 140 80" preserveAspectRatio="none">
+                            <path d="M 0,80 A 70,70 0 0,1 140,80 L 100,80 A 30,30 0 0,0 40,80 Z"
+                                  fill="#eeeeee" stroke="#9e9e9e" stroke-width="1"/>
+                        </svg>
+                        <span style="font-size:14px; pointer-events:none; font-weight:700;">Shelf</span>`;
+                break;
             case 'door': cls += 'door'; html = '<div class="door-panel"></div><div class="door-swing"></div>'; break;
             case 'window': cls += 'window'; break;
             case 'text':
@@ -1493,7 +1528,8 @@
                         el.classList.contains('bed') ||
                         el.classList.contains('shelf') ||
                         el.classList.contains('table-rect') ||
-                        el.classList.contains('half-moon');
+                        el.classList.contains('half-moon') ||
+                        el.classList.contains('curved-shelf');
         if(hasText) {
             fontSizeControls.style.display = 'flex';
         } else {
@@ -1574,7 +1610,7 @@
         let currentRot = parseInt(selectedItem.getAttribute('data-r') || '0');
         let newRot = (currentRot + 90) % 360;
         selectedItem.setAttribute('data-r', newRot);
-        if (selectedItem.classList.contains('door') || selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('zone-text')) {
+        if (selectedItem.classList.contains('door') || selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('curved-shelf') || selectedItem.classList.contains('zone-text')) {
             selectedItem.style.transform = `rotate(${newRot}deg)`;
         } else {
             selectedItem.classList.toggle('vertical');
@@ -1590,7 +1626,7 @@
     
     function changeColor(bg, border) {
         if(!selectedItem) return;
-        if(selectedItem.classList.contains('half-moon')) {
+        if(selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('curved-shelf')) {
             const path = selectedItem.querySelector('path');
             if(path) {
                 path.setAttribute('fill', bg);
@@ -1627,7 +1663,7 @@
             textElement = selectedItem;
         } else if(selectedItem.classList.contains('bed')) {
             textElement = selectedItem.querySelector('.name');
-        } else if(selectedItem.classList.contains('half-moon')) {
+        } else if(selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('curved-shelf')) {
             textElement = selectedItem.querySelector('span');
         } else if(selectedItem.classList.contains('shelf') || selectedItem.classList.contains('table-rect')) {
             // For shelf and table-rect, set font size on the element itself
@@ -1670,7 +1706,7 @@
                 .substring(0, 100); // Limit to 100 characters
 
             if(nameSpan) nameSpan.textContent = sanitized;
-            else if(selectedItem.classList.contains('half-moon')) {
+            else if(selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('curved-shelf')) {
                 const span = selectedItem.querySelector('span');
                 if(span) span.textContent = sanitized;
             } else if(selectedItem.classList.contains('zone-text')) {
@@ -1692,6 +1728,7 @@
         // Determine item type
         if(selectedItem.classList.contains('bed')) itemType = 'bed';
         else if(selectedItem.classList.contains('shelf')) itemType = 'shelf';
+        else if(selectedItem.classList.contains('curved-shelf')) itemType = 'curved shelf';
         else if(selectedItem.classList.contains('table-rect')) itemType = 'table';
         else if(selectedItem.classList.contains('half-moon')) itemType = 'arc table';
         else if(selectedItem.classList.contains('door')) itemType = 'door';
@@ -1703,7 +1740,7 @@
         const nameSpan = selectedItem.querySelector('.name');
         if(nameSpan) {
             itemLabel = nameSpan.textContent.trim();
-        } else if(selectedItem.classList.contains('half-moon')) {
+        } else if(selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('curved-shelf')) {
             const span = selectedItem.querySelector('span');
             if(span) itemLabel = span.textContent.trim();
         } else if(selectedItem.classList.contains('zone-text')) {
