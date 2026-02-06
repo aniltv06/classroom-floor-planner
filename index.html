@@ -212,7 +212,8 @@
         }
 
         .item.selected {
-            outline: 2px solid var(--selection-color);
+            outline: 3px solid var(--selection-color);
+            outline-offset: 2px;
             z-index: 100;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
@@ -354,9 +355,10 @@
 
         /* Context Menu */
         #context-menu {
-            position: absolute; background: white; border: 1px solid #ddd; border-radius: 8px;
-            padding: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: none;
+            position: absolute; background: rgba(255, 255, 255, 0.98); border: 1px solid #ddd; border-radius: 8px;
+            padding: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: none;
             flex-direction: column; gap: 8px; z-index: 500;
+            backdrop-filter: blur(5px);
         }
         .menu-row { display: flex; gap: 8px; justify-content: center; align-items: center; }
         #context-menu button { 
@@ -1373,30 +1375,47 @@
         const h = Math.round(selectedItem.offsetHeight);
         itemInfo.textContent = `X:${relX} Y:${relY} | W:${w} H:${h}`;
 
-        // Calculate menu position with bounds checking
-        let menuTop = r.top - 120;
-        let menuLeft = r.left + r.width/2 - 90;
+        // Menu dimensions
+        const menuHeight = 180; // Approximate menu height (increased for font controls)
+        const menuWidth = 180;
+        const gap = 10; // Gap between item and menu
 
-        // Ensure menu stays within viewport
-        const menuHeight = 130; // Approximate menu height
-        const menuWidth = 180; // Approximate menu width
+        let menuTop, menuLeft;
+        let positioned = false;
 
-        // Check top boundary
-        if(menuTop < 10) {
-            menuTop = r.bottom + 10; // Position below item instead
+        // Strategy 1: Try positioning to the RIGHT of the item
+        if(r.right + gap + menuWidth < window.innerWidth - 10) {
+            menuLeft = r.right + gap;
+            menuTop = r.top + (r.height / 2) - (menuHeight / 2);
+            positioned = true;
         }
 
-        // Check bottom boundary
+        // Strategy 2: Try positioning to the LEFT of the item
+        if(!positioned && r.left - gap - menuWidth > 10) {
+            menuLeft = r.left - menuWidth - gap;
+            menuTop = r.top + (r.height / 2) - (menuHeight / 2);
+            positioned = true;
+        }
+
+        // Strategy 3: Try positioning ABOVE the item
+        if(!positioned && r.top - gap - menuHeight > 10) {
+            menuTop = r.top - menuHeight - gap;
+            menuLeft = r.left + (r.width / 2) - (menuWidth / 2);
+            positioned = true;
+        }
+
+        // Strategy 4: Fallback - position BELOW the item
+        if(!positioned) {
+            menuTop = r.bottom + gap;
+            menuLeft = r.left + (r.width / 2) - (menuWidth / 2);
+        }
+
+        // Final bounds checking to keep menu on screen
+        if(menuTop < 10) menuTop = 10;
         if(menuTop + menuHeight > window.innerHeight - 10) {
             menuTop = window.innerHeight - menuHeight - 10;
         }
-
-        // Check left boundary
-        if(menuLeft < 10) {
-            menuLeft = 10;
-        }
-
-        // Check right boundary
+        if(menuLeft < 10) menuLeft = 10;
         if(menuLeft + menuWidth > window.innerWidth - 10) {
             menuLeft = window.innerWidth - menuWidth - 10;
         }
