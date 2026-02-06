@@ -713,7 +713,8 @@
         .help-list.shortcuts li {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
+            gap: 12px;
         }
         .help-list kbd {
             background: linear-gradient(to bottom, #ffffff, #f6f8fa);
@@ -966,7 +967,7 @@
 </div>
 
 <div id="coord-display">Mouse: 0, 0</div>
-<div id="designer-credit">designed by: Nishitha Thatha Anil</div>
+<div id="designer-credit">Designed By: Nishitha Thatha Anil</div>
 
 <!-- Global Settings Modal -->
 <div id="settings-modal">
@@ -1044,7 +1045,7 @@
         </div>
 
         <div class="help-section version-section">
-            <div class="version-info">designed by: Nishitha Thatha Anil</div>
+            <div class="version-info">Designed By: Nishitha Thatha Anil</div>
         </div>
     </div>
 </div>
@@ -1130,6 +1131,7 @@
     let activeItem = null;
     let selectedItem = null;
     let offset = {x:0, y:0};
+    let transformOffset = {x:0, y:0}; // Visual offset for rotated items
     let borderWidth = 1;
     let lastClickTime = 0;
     let lastClickTarget = null;
@@ -2345,6 +2347,17 @@
         offset.x = mouseX - itemX;
         offset.y = mouseY - itemY;
 
+        // For rotated items, calculate and store the visual offset once
+        const hasTransform = activeItem.style.transform && activeItem.style.transform.includes('rotate');
+        if (hasTransform) {
+            // Visual position - style position
+            transformOffset.x = (itemRect.left - cRect.left) - itemX;
+            transformOffset.y = (itemRect.top - cRect.top) - itemY;
+        } else {
+            transformOffset.x = 0;
+            transformOffset.y = 0;
+        }
+
         document.addEventListener('mousemove', drag);
         document.addEventListener('mouseup', dragEnd);
         document.addEventListener('touchmove', drag, {passive: false});
@@ -2372,26 +2385,22 @@
         const hasTransform = activeItem.style.transform && activeItem.style.transform.includes('rotate');
 
         if (hasTransform) {
-            // Get the visual bounding rect
+            // Use stored transform offset calculated at drag start
             const itemRect = activeItem.getBoundingClientRect();
             const itemWidth = itemRect.width;
             const itemHeight = itemRect.height;
 
-            // Calculate where the visual element would be relative to container
-            const visualLeft = x + (itemRect.left - cRect.left - activeItem.offsetLeft);
-            const visualTop = y + (itemRect.top - cRect.top - activeItem.offsetTop);
-
-            // Calculate the offset between style position and visual position
-            const offsetLeft = itemRect.left - cRect.left - activeItem.offsetLeft;
-            const offsetTop = itemRect.top - cRect.top - activeItem.offsetTop;
+            // Calculate where the visual element would be if we set style position to (x, y)
+            const visualLeft = x + transformOffset.x;
+            const visualTop = y + transformOffset.y;
 
             // Constrain visual position
             const constrainedVisualLeft = Math.max(margin, Math.min(visualLeft, cRect.width - itemWidth - margin));
             const constrainedVisualTop = Math.max(margin, Math.min(visualTop, cRect.height - itemHeight - margin));
 
             // Calculate style position needed to achieve constrained visual position
-            x = constrainedVisualLeft - offsetLeft;
-            y = constrainedVisualTop - offsetTop;
+            x = constrainedVisualLeft - transformOffset.x;
+            y = constrainedVisualTop - transformOffset.y;
         } else {
             // For non-rotated items, use normal constraints
             const itemWidth = activeItem.offsetWidth;
