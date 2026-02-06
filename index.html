@@ -1799,9 +1799,12 @@
         menu.style.display = 'none';
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        const r = activeItem.getBoundingClientRect();
-        offset.x = clientX - r.left;
-        offset.y = clientY - r.top;
+
+        // Use offsetLeft/offsetTop for accurate positioning with transforms and padding
+        const cRect = container.getBoundingClientRect();
+        offset.x = clientX - cRect.left - activeItem.offsetLeft;
+        offset.y = clientY - cRect.top - activeItem.offsetTop;
+
         document.addEventListener('mousemove', drag);
         document.addEventListener('mouseup', dragEnd);
         document.addEventListener('touchmove', drag, {passive: false});
