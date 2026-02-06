@@ -2385,8 +2385,34 @@
         const hasTransform = activeItem.style.transform && activeItem.style.transform.includes('rotate');
 
         if (hasTransform) {
-            // Temporarily disable constraints for rotated items to debug
-            // Just allow any position
+            // For rotated items, constrain based on visual bounding box
+            // First, tentatively set the position
+            activeItem.style.left = x + 'px';
+            activeItem.style.top = y + 'px';
+
+            // Force reflow to get accurate bounding rect
+            activeItem.offsetHeight;
+
+            // Now check the visual boundaries
+            const itemRect = activeItem.getBoundingClientRect();
+            const visualLeft = itemRect.left - cRect.left;
+            const visualTop = itemRect.top - cRect.top;
+            const visualRight = visualLeft + itemRect.width;
+            const visualBottom = visualTop + itemRect.height;
+
+            // If visual boundaries exceed limits, adjust
+            if (visualLeft < margin) {
+                x += (margin - visualLeft);
+            }
+            if (visualTop < margin) {
+                y += (margin - visualTop);
+            }
+            if (visualRight > cRect.width - margin) {
+                x -= (visualRight - (cRect.width - margin));
+            }
+            if (visualBottom > cRect.height - margin) {
+                y -= (visualBottom - (cRect.height - margin));
+            }
         } else {
             // For non-rotated items, use normal constraints
             const itemWidth = activeItem.offsetWidth;
