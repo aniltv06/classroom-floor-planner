@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Planner</title>
+    <style>
+        :root {
+            --bg-body: #e5e5e5;
+            --paper-color: #ffffff;
+            --grid-line: rgba(0, 0, 0, 0.05);
+            --grid-major: rgba(0, 0, 0, 0.15);
+            --selection-color: #007aff;
+            --ruler-bg: rgba(255, 255, 255, 0.95);
+            --center-marker: #ff3b30;
+            
+            /* Global Line Width */
+            --item-border-width: 1px;
+            
+            /* Item Colors */
+            --c-bed: #e3f2fd; --c-bed-border: #2196f3;
+            --c-shelf: #eeeeee; --c-shelf-border: #9e9e9e;
+            --c-table: #fff3e0; --c-table-border: #ff9800;
+            --c-door: #ffffff; --c-window: #e1f5fe;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* --- Header & Controls --- */
+        header {
+            background: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            z-index: 100;
+        }
+
+        h1 { font-size: 18px; margin: 0; color: #333; }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 5px;
+            padding-right: 10px;
+            border-right: 1px solid #ddd;
+            margin-right: 5px;
+        }
+
+        button {
+            background: #f5f5f7;
+            border: 1px solid #d1d1d6;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        button:hover { background: #e5e5ea; transform: translateY(-1px); }
+        
+        button.primary {
+            background: #007aff;
+            color: white;
+            border: 1px solid #0062cc;
+        }
+        button.primary:hover { background: #0069d9; }
+
+        button.active {
+            background: #333;
+            color: white;
+            border-color: #000;
+        }
+
+        /* --- Workspace --- */
+        #workspace {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+            padding: 40px;
+            background: repeating-linear-gradient(
+                45deg,
+                #e5e5e5,
+                #e5e5e5 10px,
+                #e0e0e0 10px,
+                #e0e0e0 20px
+            );
+            position: relative;
+        }
+
+        #canvas-container {
+            /* 900px x 700px Safe Print Area */
+            width: 900px; 
+            height: 700px; 
+            background-color: var(--paper-color);
+            position: relative;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        /* Major Grid */
+        #major-grid {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            background-image: 
+                linear-gradient(var(--grid-major) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-major) 1px, transparent 1px);
+            background-size: 120px 120px;
+            display: none;
+            z-index: 1;
+        }
+
+        /* Center Markers */
+        #center-marker {
+            position: absolute; top: 50%; left: 50%;
+            width: 20px; height: 20px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 2;
+            display: none; /* Hide with rulers */
+        }
+        #center-marker::before, #center-marker::after {
+            content: ''; position: absolute; background: var(--center-marker); opacity: 0.3;
+        }
+        #center-marker::before { top: 9px; left: 0; width: 100%; height: 2px; }
+        #center-marker::after { left: 9px; top: 0; height: 100%; width: 2px; }
+
+
+        /* --- Rulers --- */
+        .ruler {
+            position: absolute;
+            background: var(--ruler-bg);
+            z-index: 20;
+            display: none; /* HIDDEN BY DEFAULT */
+            font-size: 9px;
+            color: #555;
+            font-family: monospace;
+            pointer-events: none;
+        }
+        
+        #ruler-top {
+            top: 0; left: 0; right: 0; height: 24px;
+            border-bottom: 1px solid #ccc;
+            background-image: linear-gradient(90deg, #ccc 1px, transparent 1px);
+            background-size: 24px 100%;
+        }
+        #ruler-bottom {
+            bottom: 0; left: 0; right: 0; height: 24px;
+            border-top: 1px solid #ccc;
+            background-image: linear-gradient(90deg, #ccc 1px, transparent 1px);
+            background-size: 24px 100%;
+        }
+        #ruler-left {
+            top: 0; left: 0; bottom: 0; width: 24px;
+            border-right: 1px solid #ccc;
+            background-image: linear-gradient(#ccc 1px, transparent 1px);
+            background-size: 100% 24px;
+        }
+        #ruler-right {
+            top: 0; right: 0; bottom: 0; width: 24px;
+            border-left: 1px solid #ccc;
+            background-image: linear-gradient(#ccc 1px, transparent 1px);
+            background-size: 100% 24px;
+        }
+
+        .r-mark-x { position: absolute; top: 2px; transform: translateX(2px); }
+        .r-mark-x.center-tick { color: var(--center-marker); font-weight: bold; }
+        .r-mark-y { position: absolute; left: 2px; transform: translateY(-2px); }
+        .r-mark-y.center-tick { color: var(--center-marker); font-weight: bold; }
+
+
+        /* --- Items --- */
+        .item {
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            cursor: grab;
+            z-index: 10;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            background-color: var(--c-bed); /* Default bg */
+            border-color: var(--c-bed-border);
+        }
+
+        .item.selected {
+            outline: 2px solid var(--selection-color);
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* Specific Item Styles */
+        .bed {
+            border: var(--item-border-width) solid #2196f3;
+            border-radius: 4px;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        
+        /* Pillow Box */
+        .bed .pillow {
+            position: absolute;
+            background: rgba(255,255,255,0.6); 
+            border: var(--item-border-width) solid rgba(0,0,0,0.1); 
+            border-radius: 2px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .bed:not(.vertical) .pillow { left: 4px; top: 4px; bottom: 4px; width: 24px; }
+        .bed.vertical .pillow { top: 4px; left: 4px; right: 4px; height: 24px; width: auto; }
+
+        /* 'Bed' Text inside Pillow */
+        .bed .pillow span {
+            font-size: 9px;
+            color: #444;
+            text-transform: uppercase;
+            font-weight: 900; /* Extra Bold */
+            transform: rotate(-90deg);
+        }
+        .bed.vertical .pillow span {
+            transform: none; 
+        }
+
+        /* Name Label */
+        .bed .name {
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 2;
+            pointer-events: none;
+            margin-left: 28px; 
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+        .bed.vertical .name {
+            margin-left: 0;
+            margin-top: 28px;
+            height: auto;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .shelf {
+            background-color: var(--c-shelf); 
+            border: var(--item-border-width) solid var(--c-shelf-border); 
+            border-radius: 2px;
+            background-image: repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0,0,0,0.05) 20px);
+        }
+        .shelf.vertical { background-image: repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(0,0,0,0.05) 20px); }
+        .shelf.small { width: 80px; height: 30px; }
+        .shelf.medium { width: 140px; height: 40px; }
+        .shelf.long { width: 220px; height: 40px; }
+
+        .table-rect { 
+            background-color: var(--c-table); 
+            border: var(--item-border-width) solid var(--c-table-border); 
+        }
+        
+        .half-moon {
+            width: 140px; height: 80px; background: transparent; border: none;
+            display: flex; justify-content: center; align-items: flex-start; padding-top: 25px; 
+        }
+        .half-moon svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; z-index: -1; }
+        .half-moon path { stroke-width: var(--item-border-width); vector-effect: non-scaling-stroke; }
+
+        .door { width: 60px; height: 60px; pointer-events: auto; background: transparent !important; border:none !important; }
+        .door-panel {
+            position: absolute; left: 0; top: 0; width: 10px; height: 100%;
+            background: #666; 
+            border: var(--item-border-width) solid #333; 
+            pointer-events: none;
+        }
+        .door-swing {
+            position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+            border-radius: 0 0 100% 0; 
+            border-bottom: calc(var(--item-border-width) * 1.5) dashed #ccc; 
+            border-right: calc(var(--item-border-width) * 1.5) dashed #ccc;
+            opacity: 0.5; pointer-events: none;
+        }
+
+        .window {
+            background-color: var(--c-window); 
+            border: calc(var(--item-border-width) + 1px) solid #555; 
+            border-left: 1px solid #555; border-right: 1px solid #555;
+            width: 100px; height: 15px; box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+        }
+        .window::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #555; transform: translateX(-50%); }
+
+        /* Helpers */
+        .bed.vertical { }
+        .half-moon.vertical { align-items: center; padding-top: 0; padding-left: 0; } 
+        .half-moon.vertical svg { transform: rotate(90deg); }
+        .window.vertical { width: 15px; height: 100px; }
+        .window.vertical::after { top: 50%; left: 0; right: 0; height: 2px; width: auto; transform: translateY(-50%); }
+
+        /* Zone Text Item */
+        .zone-text {
+            background-color: transparent !important;
+            border: 1px dashed rgba(0,0,0,0.1);
+            font-size: 24px; 
+            font-weight: 700; 
+            color: #000000; 
+            text-transform: uppercase; 
+            letter-spacing: 5px; 
+            z-index: 5;
+            padding: 10px;
+            white-space: nowrap;
+            opacity: 1; 
+        }
+        .zone-text.selected {
+            border: 1px solid var(--selection-color);
+            color: #000000;
+        }
+
+        /* Context Menu */
+        #context-menu {
+            position: absolute; background: white; border: 1px solid #ddd; border-radius: 8px;
+            padding: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: none;
+            flex-direction: column; gap: 8px; z-index: 500;
+        }
+        .menu-row { display: flex; gap: 8px; justify-content: center; align-items: center; }
+        #context-menu button { 
+            background: #f5f5f7; border: 1px solid #e1e1e6; padding: 6px 12px; font-size: 14px; border-radius: 4px; cursor: pointer;
+        }
+        #context-menu button:hover { background: #e5e5ea; }
+        .label-sm { font-size: 10px; color: #666; margin-bottom: 2px; text-align: center; }
+        .info-box { font-size: 10px; color: #555; background: #f9f9f9; padding: 4px; border-radius: 4px; text-align: center; font-family: monospace; border: 1px solid #eee; }
+
+        .color-btn { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1) !important; padding: 0 !important; }
+        .color-btn:hover { transform: scale(1.1); }
+        
+        .color-picker-wrapper {
+            position: relative; overflow: hidden; width: 24px; height: 24px; border-radius: 50%;
+            border: 1px solid #ccc; background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+        }
+        .color-picker-input {
+            position: absolute; top: -10px; left: -10px; width: 200%; height: 200%; opacity: 0; cursor: pointer;
+        }
+
+        #coord-display {
+            position: absolute; bottom: 10px; right: 20px;
+            background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 12px;
+            font-family: monospace; font-size: 11px; color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); pointer-events: none;
+        }
+        
+        /* Settings Modal */
+        #settings-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); z-index: 1000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 20px; border-radius: 12px;
+            width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .modal-header { font-size: 18px; font-weight: 600; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .setting-row label { font-size: 14px; color: #333; }
+        .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #666; }
+
+        @media print {
+            @page { size: landscape; margin: 0.5cm; }
+            body { background: white; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 98vh; }
+            header, #context-menu, #coord-display, #settings-modal { display: none !important; }
+            .ruler { display: none !important; }
+            #major-grid, #center-marker { display: none !important; }
+            #workspace { padding: 0; margin: 0; background: white; display: block; overflow: visible; height: auto; width: auto; }
+            #canvas-container { box-shadow: none; background-image: none; border: 2px solid #333; margin: 0; width: 900px !important; height: 700px !important; }
+            .bed { border-color: #000 !important; }
+            .shelf { border-color: #000 !important; }
+            .window { border-color: #000 !important; }
+            .zone-text { border: none !important; color: #000 !important; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="display:flex; flex-direction:column;">
+        <h1>Classroom Planner</h1>
+    </div>
+    
+    <div class="toolbar">
+        <div class="btn-group">
+            <button onclick="addItem('bed')">🛏️ Bed</button>
+            <button onclick="addItem('shelf')">📚 Shelf</button>
+            <button onclick="addItem('table')">🔲 Table</button>
+            <button onclick="addItem('half-moon')">🌙 Arc Table</button>
+        </div>
+        <div class="btn-group">
+            <button onclick="addItem('door')">🚪 Door</button>
+            <button onclick="addItem('window')">🪟 Window</button>
+        </div>
+        <div class="btn-group">
+             <button id="btn-border" onclick="cycleBorder()">✏️ Line Width</button>
+             <button id="btn-scale" onclick="toggleScale()">📏 Borders</button>
+             <button id="btn-grid" onclick="toggleGrid()">▦ Grid</button>
+             <button onclick="toggleSettings()">⚙️ Color Settings</button>
+        </div>
+        <button class="primary" onclick="window.print()">🖨️ Print / Save PDF</button>
+    </div>
+</header>
+
+<div id="workspace">
+    <div id="canvas-container">
+        <!-- Rulers & Grid -->
+        <div id="ruler-top" class="ruler"></div>
+        <div id="ruler-bottom" class="ruler"></div>
+        <div id="ruler-left" class="ruler"></div>
+        <div id="ruler-right" class="ruler"></div>
+        <div id="major-grid"></div>
+        <div id="center-marker"></div>
+
+        <!-- Zones -->
+        <div class="item zone-text" style="top: 216px; left: 802px; width: 98px; height: 26px; transform: rotate(-90deg);" data-r="-90">Zone 1</div>
+        <div class="item zone-text" style="top: 24px; left: 408px; width: 149px; height: 50px;">Zone 2</div>
+        <div class="item zone-text" style="top: 480px; left: 0px; width: 137px; height: 50px; transform: rotate(-90deg);" data-r="-90">Zone 3</div>
+
+        <!-- --- USER DEFINED ITEMS --- -->
+
+        <!-- 1. Bed (Student 1) -->
+        <div class="item bed" style="top: 24px; left: 72px; width: 100px; height: 48px;">
+            <div class="pillow"><span>Bed</span></div>
+            <div class="name">Student 1</div>
+        </div>
+        
+        <!-- 2. Bed (Student 2) -->
+        <div class="item bed" style="top: 192px; left: 72px; width: 100px; height: 48px;">
+            <div class="pillow"><span>Bed</span></div>
+            <div class="name">Student 2</div>
+        </div>
+
+        <!-- 3. Bed (Student 3) - Vertical -->
+        <div class="item bed vertical" style="top: 24px; left: 312px; width: 48px; height: 100px;">
+            <div class="pillow"><span>Bed</span></div>
+            <div class="name">Student 3</div>
+        </div>
+
+        <!-- 4. Bed (Student 4) - Vertical -->
+        <div class="item bed vertical" style="top: 24px; left: 552px; width: 48px; height: 100px;">
+            <div class="pillow"><span>Bed</span></div>
+            <div class="name">Student 4</div>
+        </div>
+
+        <!-- 5. Bed (Student 5) -->
+        <div class="item bed" style="top: 120px; left: 744px; width: 100px; height: 48px;">
+            <div class="pillow"><span>Bed</span></div>
+            <div class="name">Student 5</div>
+        </div>
+
+        <!-- 6. Bed (Student 6) -->
+        <div class="item bed" style="top: 288px; left: 768px; width: 100px; height: 60px;">
+            <div class="pillow"><span>Bed</span></div>
+            <div class="name">Student 6</div>
+        </div>
+
+        <!-- 7. Bed (Student 7) -->
+        <div class="item bed" style="top: 192px; left: 408px; width: 100px; height: 60px;">
+            <div class="pillow"><span>Bed</span></div>
+            <div class="name">Student 7</div>
+        </div>
+
+        <!-- 8. Bed (Student 8) - Vertical -->
+        <div class="item bed vertical" style="top: 240px; left: 600px; width: 60px; height: 100px;">
+            <div class="pillow"><span>Bed</span></div>
+            <div class="name">Student 8</div>
+        </div>
+
+        <!-- --- SHELVES --- -->
+        <div class="item shelf vertical" style="top: 0px; left: 240px; width: 64px; height: 164px;">Shelf</div>
+        <div class="item shelf vertical" style="top: 0px; left: 624px; width: 64px; height: 164px;">Shelf</div>
+        <div class="item shelf" style="top: 264px; left: 0px; width: 188px; height: 40px;">Shelf</div>
+        <div class="item shelf" style="top: 264px; left: 312px; width: 284px; height: 52px;">Shelf</div>
+        <div class="item shelf" style="top: 360px; left: 640px; width: 260px; height: 40px;">Shelf</div>
+        <div class="item shelf" style="top: 660px; left: 456px; width: 140px; height: 40px;">Shelf</div>
+
+        <!-- --- TABLES --- -->
+        <div class="item table-rect" style="top: 0px; left: 744px; width: 84px; height: 30px;">Table</div>
+        <div class="item table-rect" style="top: 432px; left: 336px; width: 292px; height: 126px;">Table</div>
+        <div class="item table-rect" style="top: 646px; left: 288px; width: 72px; height: 54px;">Table</div>
+        
+        <div class="item half-moon vertical" style="top: 432px; left: 96px; width: 230px; height: 150px;">
+            <svg viewBox="0 0 140 80" preserveAspectRatio="none">
+                <path d="M 0,80 A 70,70 0 0,1 140,80 L 100,80 A 30,30 0 0,0 40,80 Z" 
+                      fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+            </svg>
+            <span style="font-size:11px; pointer-events:none; font-weight:600;">Table</span>
+        </div>
+
+        <!-- --- DOORS --- -->
+        <div class="item door" style="top: 432px; left: 840px;"><div class="door-panel"></div><div class="door-swing"></div></div>
+        <div class="item door" style="top: 528px; left: 840px;"><div class="door-panel"></div><div class="door-swing"></div></div>
+        <div class="item door" style="top: 640px; left: 192px;"><div class="door-panel"></div><div class="door-swing"></div></div>
+
+        <!-- Windows -->
+        <div class="item window vertical" style="top: 72px; left: 0px; width: 15px; height: 100px;"></div>
+
+    </div>
+</div>
+
+<div id="coord-display">Mouse: 0, 0</div>
+
+<!-- Global Settings Modal -->
+<div id="settings-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span>Furniture Colors</span>
+            <button class="close-btn" onclick="toggleSettings()">×</button>
+        </div>
+        <div class="setting-row">
+            <label>All Beds</label>
+            <input type="color" value="#e3f2fd" onchange="updateGlobalColor('bed', this.value)">
+        </div>
+        <div class="setting-row">
+            <label>All Shelves</label>
+            <input type="color" value="#eeeeee" onchange="updateGlobalColor('shelf', this.value)">
+        </div>
+        <div class="setting-row">
+            <label>All Tables</label>
+            <input type="color" value="#fff3e0" onchange="updateGlobalColor('table', this.value)">
+        </div>
+    </div>
+</div>
+
+<!-- Context Menu -->
+<div id="context-menu">
+    <div class="info-box" id="item-info">
+        Pos: 0, 0 | Size: 0 x 0
+    </div>
+    
+    <div class="menu-row">
+        <!-- Preset Colors -->
+        <button class="color-btn" style="background:#e3f2fd;" onclick="changeColor('#e3f2fd', '#2196f3')"></button>
+        <button class="color-btn" style="background:#ffcdd2;" onclick="changeColor('#ffcdd2', '#ef5350')"></button>
+        <button class="color-btn" style="background:#c8e6c9;" onclick="changeColor('#c8e6c9', '#4caf50')"></button>
+        <button class="color-btn" style="background:#fff9c4;" onclick="changeColor('#fff9c4', '#fbc02d')"></button>
+        <!-- Custom Picker -->
+        <div class="color-picker-wrapper" title="Pick Custom Color">
+            <input type="color" class="color-picker-input" onchange="changeColor(this.value, '#999')">
+        </div>
+    </div>
+
+    <div class="menu-row">
+        <button onclick="rotateItem()" title="Rotate 90°">↻</button>
+        <button onclick="renameItem()" title="Rename">✎</button>
+        <button style="color:red;" onclick="deleteItem()" title="Delete">🗑️</button>
+    </div>
+    <div class="menu-row">
+        <div style="display:flex; flex-direction:column; align-items:center;">
+            <span class="label-sm">Width</span>
+            <div style="display:flex; gap:5px;">
+                <button onclick="scaleItem('w', -12)">-</button>
+                <button onclick="scaleItem('w', 12)">+</button>
+            </div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center;">
+            <span class="label-sm">Height</span>
+            <div style="display:flex; gap:5px;">
+                <button onclick="scaleItem('h', -12)">-</button>
+                <button onclick="scaleItem('h', 12)">+</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const container = document.getElementById("canvas-container");
+    const menu = document.getElementById("context-menu");
+    const btnScale = document.getElementById("btn-scale");
+    const btnGrid = document.getElementById("btn-grid");
+    const rulers = document.querySelectorAll('.ruler');
+    const majorGrid = document.getElementById("major-grid");
+    const itemInfo = document.getElementById("item-info");
+    const coordDisplay = document.getElementById("coord-display");
+    const centerMarker = document.getElementById("center-marker");
+    const settingsModal = document.getElementById("settings-modal");
+    
+    let activeItem = null;
+    let selectedItem = null;
+    let offset = {x:0, y:0};
+    
+    let borderWidth = 1;
+
+    // --- Init ---
+    initRulers();
+    document.querySelectorAll('.item').forEach(makeDraggable);
+    
+    document.getElementById('workspace').addEventListener('mousedown', (e) => {
+        if(e.target.id === 'workspace') deselect();
+    });
+    container.addEventListener('mousedown', (e) => {
+        if(e.target === container) deselect();
+    });
+    
+    container.addEventListener('mousemove', (e) => {
+        const r = container.getBoundingClientRect();
+        const x = Math.round(e.clientX - r.left);
+        const y = Math.round(e.clientY - r.top);
+        if(x >= 0 && x <= 900 && y >= 0 && y <= 700) {
+            coordDisplay.textContent = `Mouse: ${x}, ${y}`;
+        }
+    });
+
+    // --- Global Settings ---
+    function toggleSettings() {
+        settingsModal.style.display = (settingsModal.style.display === 'flex') ? 'none' : 'flex';
+    }
+    
+    function updateGlobalColor(type, color) {
+        let selector = '';
+        if(type === 'bed') selector = '.bed';
+        else if(type === 'shelf') selector = '.shelf';
+        else if(type === 'table') selector = '.table-rect, .half-moon';
+        
+        const items = document.querySelectorAll(selector);
+        items.forEach(item => {
+            if(item.classList.contains('half-moon')) {
+                const path = item.querySelector('path');
+                if(path) path.setAttribute('fill', color);
+            } else {
+                item.style.backgroundColor = color;
+            }
+        });
+    }
+
+    // --- Rulers Logic ---
+    function initRulers() {
+        const topRuler = document.getElementById('ruler-top');
+        const bottomRuler = document.getElementById('ruler-bottom');
+        const leftRuler = document.getElementById('ruler-left');
+        const rightRuler = document.getElementById('ruler-right');
+        
+        for(let i=0; i<39; i+=5) {
+            addMark(topRuler, 'x', i);
+            addMark(bottomRuler, 'x', i);
+        }
+        for(let i=0; i<30; i+=5) {
+            addMark(leftRuler, 'y', i);
+            addMark(rightRuler, 'y', i);
+        }
+        addMark(topRuler, 'x', 18.75, true);
+        addMark(bottomRuler, 'x', 18.75, true);
+        addMark(leftRuler, 'y', 14.6, true);
+        addMark(rightRuler, 'y', 14.6, true);
+    }
+    
+    function addMark(parent, axis, val, isCenter=false) {
+        const mark = document.createElement('div');
+        if(axis === 'x') {
+            mark.className = 'r-mark-x' + (isCenter ? ' center-tick' : '');
+            mark.style.left = (val * 24) + 'px';
+            mark.textContent = isCenter ? 'C' : val;
+        } else {
+            mark.className = 'r-mark-y' + (isCenter ? ' center-tick' : '');
+            mark.style.top = (val * 24) + 'px';
+            mark.textContent = isCenter ? 'C' : val;
+        }
+        parent.appendChild(mark);
+    }
+
+    function toggleScale() {
+        const currentDisplay = window.getComputedStyle(rulers[0]).display;
+        const isHidden = currentDisplay === 'none';
+        
+        rulers.forEach(r => r.style.display = isHidden ? 'block' : 'none');
+        if(centerMarker) centerMarker.style.display = isHidden ? 'block' : 'none';
+        
+        if (isHidden) btnScale.classList.add('active');
+        else btnScale.classList.remove('active');
+    }
+    
+    function toggleGrid() {
+        const isHidden = majorGrid.style.display === 'block';
+        majorGrid.style.display = isHidden ? 'none' : 'block';
+        btnGrid.classList.toggle('active');
+    }
+    
+    function cycleBorder() {
+        borderWidth++;
+        if(borderWidth > 3) borderWidth = 1;
+        document.documentElement.style.setProperty('--item-border-width', borderWidth + 'px');
+    }
+
+    // --- Item Management ---
+    function makeDraggable(el) {
+        el.addEventListener('mousedown', dragStart);
+        el.addEventListener('touchstart', dragStart, {passive: false});
+        el.addEventListener('dblclick', () => { selectItem(el); renameItem(); });
+    }
+
+    function addItem(type) {
+        const el = document.createElement('div');
+        let html = '';
+        let cls = 'item ';
+        const startTop = '300px'; const startLeft = '400px';
+
+        switch(type) {
+            case 'bed': 
+                cls += 'bed'; 
+                html = '<div class="pillow"><span>Bed</span></div><div class="name">New</div>'; 
+                break;
+            case 'shelf': cls += 'shelf medium'; html = 'Shelf'; break;
+            case 'table': cls += 'table-rect'; html = 'Table'; break;
+            case 'half-moon': 
+                cls += 'half-moon'; 
+                html = `<svg viewBox="0 0 140 80" preserveAspectRatio="none">
+                            <path d="M 0,80 A 70,70 0 0,1 140,80 L 100,80 A 30,30 0 0,0 40,80 Z" 
+                                  fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+                        </svg>
+                        <span style="font-size:11px; pointer-events:none; font-weight:600;">Table</span>`;
+                break;
+            case 'door': cls += 'door'; html = '<div class="door-panel"></div><div class="door-swing"></div>'; break;
+            case 'window': cls += 'window'; break;
+        }
+
+        el.className = cls;
+        el.innerHTML = html;
+        el.style.top = startTop; el.style.left = startLeft;
+        container.appendChild(el);
+        makeDraggable(el);
+        selectItem(el);
+    }
+
+    function selectItem(el) {
+        if(selectedItem) selectedItem.classList.remove('selected');
+        selectedItem = el;
+        el.classList.add('selected');
+        updateMenuPos();
+        menu.style.display = 'flex';
+    }
+
+    function deselect() {
+        if(selectedItem) selectedItem.classList.remove('selected');
+        selectedItem = null;
+        menu.style.display = 'none';
+        settingsModal.style.display = 'none';
+    }
+
+    function updateMenuPos() {
+        if(!selectedItem) return;
+        const r = selectedItem.getBoundingClientRect();
+        
+        // Relative coords
+        const relX = Math.round(selectedItem.offsetLeft);
+        const relY = Math.round(selectedItem.offsetTop);
+        const w = Math.round(selectedItem.offsetWidth);
+        const h = Math.round(selectedItem.offsetHeight);
+        
+        itemInfo.textContent = `X:${relX} Y:${relY} | W:${w} H:${h}`;
+
+        menu.style.top = (r.top - 120) + 'px'; 
+        menu.style.left = (r.left + r.width/2 - 90) + 'px';
+    }
+
+    function rotateItem() {
+        if(!selectedItem) return;
+        let currentRot = parseInt(selectedItem.getAttribute('data-r') || '0');
+        let newRot = (currentRot + 90) % 360;
+        selectedItem.setAttribute('data-r', newRot);
+        if (selectedItem.classList.contains('door') || selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('zone-text')) {
+            selectedItem.style.transform = `rotate(${newRot}deg)`;
+            return;
+        }
+        selectedItem.classList.toggle('vertical');
+        if(selectedItem.style.width && selectedItem.style.height) {
+            const w = selectedItem.style.width;
+            selectedItem.style.width = selectedItem.style.height;
+            selectedItem.style.height = w;
+        }
+        updateMenuPos();
+    }
+    
+    function changeColor(bg, border) {
+        if(!selectedItem) return;
+        if(selectedItem.classList.contains('half-moon')) {
+            const path = selectedItem.querySelector('path');
+            if(path) {
+                path.setAttribute('fill', bg);
+                path.setAttribute('stroke', border);
+            }
+        } else {
+            selectedItem.style.backgroundColor = bg;
+            selectedItem.style.borderColor = border;
+        }
+    }
+
+    function scaleItem(axis, delta) {
+        if(!selectedItem) return;
+        const computed = window.getComputedStyle(selectedItem);
+        let currW = parseFloat(computed.width);
+        let currH = parseFloat(computed.height);
+        const isVert = selectedItem.classList.contains('vertical');
+        if (axis === 'w') { if (isVert) currH += delta; else currW += delta; } 
+        else { if (isVert) currW += delta; else currH += delta; }
+        if(currW < 20) currW = 20; if(currH < 20) currH = 20;
+        selectedItem.style.width = currW + 'px'; selectedItem.style.height = currH + 'px';
+        updateMenuPos();
+    }
+
+    function renameItem() {
+        if(!selectedItem) return;
+        let current = '';
+        const nameSpan = selectedItem.querySelector('.name');
+        if(selectedItem.classList.contains('zone-text')) {
+            current = selectedItem.textContent;
+        } else if(nameSpan) {
+            current = nameSpan.textContent;
+        } else {
+            const textNode = selectedItem.childNodes[0];
+            if(textNode && textNode.nodeType === 3) current = textNode.textContent.trim();
+        }
+        
+        const newVal = prompt("Label:", current);
+        if(newVal) {
+            if(nameSpan) nameSpan.textContent = newVal;
+            else if(selectedItem.classList.contains('half-moon')) {
+                selectedItem.querySelector('span').textContent = newVal;
+            } else if(selectedItem.classList.contains('zone-text')) {
+                selectedItem.textContent = newVal;
+            } else if(!selectedItem.querySelector('.door-panel')) {
+                selectedItem.textContent = newVal;
+            }
+        }
+    }
+
+    function deleteItem() {
+        if(selectedItem && confirm("Delete item?")) {
+            selectedItem.remove();
+            deselect();
+        }
+    }
+
+    // --- Drag Logic ---
+    function dragStart(e) {
+        if(e.target.closest('#context-menu') || e.target.closest('#settings-modal')) return;
+        e.preventDefault();
+        activeItem = e.currentTarget;
+        selectItem(activeItem);
+        menu.style.display = 'none';
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const r = activeItem.getBoundingClientRect();
+        offset.x = clientX - r.left;
+        offset.y = clientY - r.top;
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchmove', drag, {passive: false});
+        document.addEventListener('touchend', dragEnd);
+    }
+
+    function drag(e) {
+        if(!activeItem) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const cRect = container.getBoundingClientRect();
+        let x = clientX - cRect.left - offset.x;
+        let y = clientY - cRect.top - offset.y;
+        x = Math.round(x / 24) * 24;
+        y = Math.round(y / 24) * 24;
+        x = Math.max(0, Math.min(x, cRect.width - activeItem.offsetWidth));
+        y = Math.max(0, Math.min(y, cRect.height - activeItem.offsetHeight));
+        activeItem.style.left = x + 'px';
+        activeItem.style.top = y + 'px';
+    }
+
+    function dragEnd() {
+        if(activeItem) {
+            updateMenuPos();
+            menu.style.display = 'flex';
+            activeItem = null;
+        }
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', dragEnd);
+        document.removeEventListener('touchmove', drag);
+        document.removeEventListener('touchend', dragEnd);
+    }
+</script>
+</body>
+</html>
