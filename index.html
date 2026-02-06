@@ -500,6 +500,7 @@
         <div class="btn-group">
             <button onclick="addItem('door')">🚪 Door</button>
             <button onclick="addItem('window')">🪟 Window</button>
+            <button onclick="addItem('text')">📝 Text Label</button>
         </div>
         <div class="btn-group">
              <button id="btn-border" onclick="cycleBorder()">✏️ Line Width</button>
@@ -591,6 +592,15 @@
             <div style="display:flex; gap:5px;">
                 <button onclick="scaleItem('h', -12)">-</button>
                 <button onclick="scaleItem('h', 12)">+</button>
+            </div>
+        </div>
+    </div>
+    <div class="menu-row" id="font-size-controls" style="display:none;">
+        <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+            <span class="label-sm">Font Size</span>
+            <div style="display:flex; gap:5px;">
+                <button onclick="changeFontSize(-2)">-</button>
+                <button onclick="changeFontSize(2)">+</button>
             </div>
         </div>
     </div>
@@ -1249,6 +1259,12 @@
                 break;
             case 'door': cls += 'door'; html = '<div class="door-panel"></div><div class="door-swing"></div>'; break;
             case 'window': cls += 'window'; break;
+            case 'text':
+                cls += 'zone-text';
+                html = 'Text Label';
+                el.style.width = '150px';
+                el.style.height = '40px';
+                break;
         }
 
         el.className = cls;
@@ -1285,6 +1301,15 @@
         if(selectedItem) selectedItem.classList.remove('selected');
         selectedItem = el;
         el.classList.add('selected');
+
+        // Show/hide font size controls for text labels
+        const fontSizeControls = document.getElementById('font-size-controls');
+        if(el.classList.contains('zone-text')) {
+            fontSizeControls.style.display = 'flex';
+        } else {
+            fontSizeControls.style.display = 'none';
+        }
+
         updateMenuPos();
         menu.style.display = 'flex';
     }
@@ -1377,10 +1402,26 @@
         let currW = parseFloat(computed.width);
         let currH = parseFloat(computed.height);
         const isVert = selectedItem.classList.contains('vertical');
-        if (axis === 'w') { if (isVert) currH += delta; else currW += delta; } 
+        if (axis === 'w') { if (isVert) currH += delta; else currW += delta; }
         else { if (isVert) currW += delta; else currH += delta; }
         if(currW < 20) currW = 20; if(currH < 20) currH = 20;
         selectedItem.style.width = currW + 'px'; selectedItem.style.height = currH + 'px';
+        updateMenuPos();
+        saveState();
+    }
+
+    function changeFontSize(delta) {
+        if(!selectedItem || !selectedItem.classList.contains('zone-text')) return;
+
+        const computed = window.getComputedStyle(selectedItem);
+        let currentSize = parseFloat(computed.fontSize);
+
+        currentSize += delta;
+        // Keep font size within reasonable bounds
+        if(currentSize < 8) currentSize = 8;
+        if(currentSize > 72) currentSize = 72;
+
+        selectedItem.style.fontSize = currentSize + 'px';
         updateMenuPos();
         saveState();
     }
