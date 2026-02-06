@@ -1759,14 +1759,41 @@
         let newTop = top + 20;
         let newLeft = left + 20;
 
-        // Get dimensions using getBoundingClientRect (includes transforms/rotations)
-        const itemRect = selectedItem.getBoundingClientRect();
-        const width = itemRect.width;
-        const height = itemRect.height;
+        // Check if item has transform (rotation)
+        const hasTransform = selectedItem.style.transform && selectedItem.style.transform.includes('rotate');
 
-        // Apply boundary constraints
-        newLeft = Math.max(margin, Math.min(newLeft, 900 - width - margin));
-        newTop = Math.max(margin, Math.min(newTop, 700 - height - margin));
+        if (hasTransform) {
+            // For rotated items, check visual boundaries
+            const itemRect = selectedItem.getBoundingClientRect();
+            const cRect = container.getBoundingClientRect();
+
+            // Calculate current visual position
+            const visualLeft = itemRect.left - cRect.left;
+            const visualTop = itemRect.top - cRect.top;
+
+            // Calculate offset between style position and visual position
+            const offsetLeft = visualLeft - left;
+            const offsetTop = visualTop - top;
+
+            // Proposed visual position
+            const newVisualLeft = visualLeft + 20;
+            const newVisualTop = visualTop + 20;
+
+            // Constrain visual position
+            const constrainedVisualLeft = Math.max(margin, Math.min(newVisualLeft, 900 - itemRect.width - margin));
+            const constrainedVisualTop = Math.max(margin, Math.min(newVisualTop, 700 - itemRect.height - margin));
+
+            // Calculate style position needed
+            newLeft = constrainedVisualLeft - offsetLeft;
+            newTop = constrainedVisualTop - offsetTop;
+        } else {
+            // For non-rotated items, use normal constraints
+            const width = selectedItem.offsetWidth;
+            const height = selectedItem.offsetHeight;
+
+            newLeft = Math.max(margin, Math.min(newLeft, 900 - width - margin));
+            newTop = Math.max(margin, Math.min(newTop, 700 - height - margin));
+        }
 
         clone.style.top = newTop + 'px';
         clone.style.left = newLeft + 'px';
@@ -1886,17 +1913,37 @@
         const isDoorOrWindow = selectedItem.classList.contains('door') || selectedItem.classList.contains('window');
         const margin = isDoorOrWindow ? 0 : 8;
 
+        // Force a reflow to ensure transform is applied
+        selectedItem.offsetHeight;
+
+        // Get the visual bounding rect after rotation
+        const itemRect = selectedItem.getBoundingClientRect();
+        const cRect = container.getBoundingClientRect();
+
+        // Calculate visual position relative to container
+        const visualLeft = itemRect.left - cRect.left;
+        const visualTop = itemRect.top - cRect.top;
+
+        // Check if visual boundaries exceed canvas
+        const visualRight = visualLeft + itemRect.width;
+        const visualBottom = visualTop + itemRect.height;
+
         let currentLeft = parseInt(selectedItem.style.left) || 0;
         let currentTop = parseInt(selectedItem.style.top) || 0;
 
-        // Get dimensions using getBoundingClientRect (includes transforms/rotations)
-        const itemRect = selectedItem.getBoundingClientRect();
-        const width = itemRect.width;
-        const height = itemRect.height;
-
-        // Adjust position if item now exceeds boundaries
-        currentLeft = Math.max(margin, Math.min(currentLeft, 900 - width - margin));
-        currentTop = Math.max(margin, Math.min(currentTop, 700 - height - margin));
+        // Adjust position if visual boundaries exceed limits
+        if (visualLeft < margin) {
+            currentLeft += (margin - visualLeft);
+        }
+        if (visualTop < margin) {
+            currentTop += (margin - visualTop);
+        }
+        if (visualRight > 900 - margin) {
+            currentLeft -= (visualRight - (900 - margin));
+        }
+        if (visualBottom > 700 - margin) {
+            currentTop -= (visualBottom - (700 - margin));
+        }
 
         selectedItem.style.left = currentLeft + 'px';
         selectedItem.style.top = currentTop + 'px';
@@ -2137,14 +2184,39 @@
         // Set margin based on item type
         const margin = isDoorOrWindow ? 0 : 8; // 8px margin for furniture items
 
-        // Use getBoundingClientRect to get actual rendered dimensions (includes transforms)
-        const itemRect = activeItem.getBoundingClientRect();
-        const itemWidth = itemRect.width;
-        const itemHeight = itemRect.height;
+        // For items with CSS transforms (rotation), we need to constrain the visual position
+        // not the style.top/left position, because they differ due to transform origin
+        const hasTransform = activeItem.style.transform && activeItem.style.transform.includes('rotate');
 
-        // Apply constraints with appropriate margins
-        x = Math.max(margin, Math.min(x, cRect.width - itemWidth - margin));
-        y = Math.max(margin, Math.min(y, cRect.height - itemHeight - margin));
+        if (hasTransform) {
+            // Get the visual bounding rect
+            const itemRect = activeItem.getBoundingClientRect();
+            const itemWidth = itemRect.width;
+            const itemHeight = itemRect.height;
+
+            // Calculate where the visual element would be relative to container
+            const visualLeft = x + (itemRect.left - cRect.left - activeItem.offsetLeft);
+            const visualTop = y + (itemRect.top - cRect.top - activeItem.offsetTop);
+
+            // Calculate the offset between style position and visual position
+            const offsetLeft = itemRect.left - cRect.left - activeItem.offsetLeft;
+            const offsetTop = itemRect.top - cRect.top - activeItem.offsetTop;
+
+            // Constrain visual position
+            const constrainedVisualLeft = Math.max(margin, Math.min(visualLeft, cRect.width - itemWidth - margin));
+            const constrainedVisualTop = Math.max(margin, Math.min(visualTop, cRect.height - itemHeight - margin));
+
+            // Calculate style position needed to achieve constrained visual position
+            x = constrainedVisualLeft - offsetLeft;
+            y = constrainedVisualTop - offsetTop;
+        } else {
+            // For non-rotated items, use normal constraints
+            const itemWidth = activeItem.offsetWidth;
+            const itemHeight = activeItem.offsetHeight;
+
+            x = Math.max(margin, Math.min(x, cRect.width - itemWidth - margin));
+            y = Math.max(margin, Math.min(y, cRect.height - itemHeight - margin));
+        }
 
         activeItem.style.left = x + 'px';
         activeItem.style.top = y + 'px';
