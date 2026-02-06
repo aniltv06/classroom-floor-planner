@@ -271,12 +271,13 @@
         }
         .bed.vertical .name {
             margin-left: 0;
-            margin-top: 28px;
+            margin-top: 32px;
             height: auto;
             width: 100%;
             justify-content: center;
             writing-mode: vertical-rl;
             text-orientation: mixed;
+            padding-top: 4px;
         }
 
         .shelf {
@@ -1278,12 +1279,19 @@
         const startTop = '300px'; const startLeft = '400px';
 
         switch(type) {
-            case 'bed': 
-                cls += 'bed'; 
-                html = '<div class="pillow"><span>Bed</span></div><div class="name">New</div>'; 
+            case 'bed':
+                cls += 'bed';
+                html = '<div class="pillow"><span>Bed</span></div><div class="name">New</div>';
+                el.style.width = '100px';
+                el.style.height = '48px';
                 break;
             case 'shelf': cls += 'shelf medium'; html = 'Shelf'; break;
-            case 'table': cls += 'table-rect'; html = 'Table'; break;
+            case 'table':
+                cls += 'table-rect';
+                html = 'Table';
+                el.style.width = '120px';
+                el.style.height = '80px';
+                break;
             case 'half-moon': 
                 cls += 'half-moon'; 
                 html = `<svg viewBox="0 0 140 80" preserveAspectRatio="none">
