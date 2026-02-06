@@ -571,7 +571,25 @@
             backdrop-filter: blur(8px);
             font-weight: 500;
         }
-        
+
+        #designer-credit {
+            position: absolute;
+            bottom: 12px;
+            left: 24px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(250,251,252,0.95));
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 10px;
+            color: #6c757d;
+            box-shadow:
+                0 4px 12px rgba(0,0,0,0.1),
+                0 1px 3px rgba(0,0,0,0.08);
+            pointer-events: none;
+            border: 1px solid rgba(209,213,218,0.5);
+            backdrop-filter: blur(8px);
+            font-weight: 400;
+        }
+
         /* Settings Modal */
         #settings-modal {
             position: fixed;
@@ -853,7 +871,7 @@
                 background: white;
                 display: block;
             }
-            header, #context-menu, #coord-display, #settings-modal, #help-modal, .room-tabs { display: none !important; }
+            header, #context-menu, #coord-display, #designer-credit, #settings-modal, #help-modal, .room-tabs { display: none !important; }
             .ruler { display: none !important; }
             #major-grid, #center-marker { display: none !important; }
             #workspace {
@@ -948,6 +966,7 @@
 </div>
 
 <div id="coord-display">Mouse: 0, 0</div>
+<div id="designer-credit">designed by: Nishitha Thatha Anil</div>
 
 <!-- Global Settings Modal -->
 <div id="settings-modal">
@@ -1015,7 +1034,7 @@
 
         <div class="help-section report-section">
             <h3>🐛 Report Issues</h3>
-            <p class="help-text">Found a bug or have a suggestion? We'd love to hear from you!</p>
+            <p class="help-text">Found a bug or have a suggestion? I'd love to hear from you!</p>
             <div class="contact-box">
                 <div class="contact-name">Nishitha Thatha Anil</div>
                 <a href="mailto:nishitha.1190@gmail.com?subject=Classroom%20Planner%20Feedback&body=Hi%20Nishitha,%0D%0A%0D%0AI'm%20reporting%20an%20issue%20with%20the%20Classroom%20Planner:%0D%0A%0D%0ADescription:%0D%0A[Please%20describe%20the%20issue]%0D%0A%0D%0ASteps%20to%20reproduce:%0D%0A1.%20%0D%0A2.%20%0D%0A3.%20%0D%0A%0D%0AExpected%20behavior:%0D%0A[What%20should%20happen]%0D%0A%0D%0AActual%20behavior:%0D%0A[What%20actually%20happened]%0D%0A%0D%0ABrowser:%20[e.g.%20Chrome,%20Safari,%20Firefox]%0D%0A" class="email-link">
@@ -1025,7 +1044,7 @@
         </div>
 
         <div class="help-section version-section">
-            <div class="version-info">Version 2.0 • Multi-Room Support</div>
+            <div class="version-info">designed by: Nishitha Thatha Anil</div>
         </div>
     </div>
 </div>
