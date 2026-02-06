@@ -305,10 +305,11 @@
         .half-moon svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; z-index: -1; }
         .half-moon path { stroke-width: var(--item-border-width); vector-effect: non-scaling-stroke; }
         .half-moon span {
-            font-size: 11px;
+            font-size: 14px;
             pointer-events: none;
-            font-weight: 600;
+            font-weight: 700;
             z-index: 1;
+            color: #333;
         }
 
         .door { width: 60px; height: 60px; pointer-events: auto; background: transparent !important; border:none !important; }
@@ -1310,13 +1311,13 @@
                 el.style.width = '120px';
                 el.style.height = '80px';
                 break;
-            case 'half-moon': 
-                cls += 'half-moon'; 
+            case 'half-moon':
+                cls += 'half-moon';
                 html = `<svg viewBox="0 0 140 80" preserveAspectRatio="none">
-                            <path d="M 0,80 A 70,70 0 0,1 140,80 L 100,80 A 30,30 0 0,0 40,80 Z" 
+                            <path d="M 0,80 A 70,70 0 0,1 140,80 L 100,80 A 30,30 0 0,0 40,80 Z"
                                   fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
                         </svg>
-                        <span style="font-size:11px; pointer-events:none; font-weight:600;">Table</span>`;
+                        <span style="font-size:14px; pointer-events:none; font-weight:700;">Table</span>`;
                 break;
             case 'door': cls += 'door'; html = '<div class="door-panel"></div><div class="door-swing"></div>'; break;
             case 'window': cls += 'window'; break;
@@ -1363,9 +1364,14 @@
         selectedItem = el;
         el.classList.add('selected');
 
-        // Show/hide font size controls for text labels
+        // Show/hide font size controls for items with text
         const fontSizeControls = document.getElementById('font-size-controls');
-        if(el.classList.contains('zone-text')) {
+        const hasText = el.classList.contains('zone-text') ||
+                        el.classList.contains('bed') ||
+                        el.classList.contains('shelf') ||
+                        el.classList.contains('table-rect') ||
+                        el.classList.contains('half-moon');
+        if(hasText) {
             fontSizeControls.style.display = 'flex';
         } else {
             fontSizeControls.style.display = 'none';
@@ -1489,17 +1495,33 @@
     }
 
     function changeFontSize(delta) {
-        if(!selectedItem || !selectedItem.classList.contains('zone-text')) return;
+        if(!selectedItem) return;
 
-        const computed = window.getComputedStyle(selectedItem);
+        // Determine the text element to modify based on item type
+        let textElement = null;
+
+        if(selectedItem.classList.contains('zone-text')) {
+            textElement = selectedItem;
+        } else if(selectedItem.classList.contains('bed')) {
+            textElement = selectedItem.querySelector('.name');
+        } else if(selectedItem.classList.contains('half-moon')) {
+            textElement = selectedItem.querySelector('span');
+        } else if(selectedItem.classList.contains('shelf') || selectedItem.classList.contains('table-rect')) {
+            // For shelf and table-rect, set font size on the element itself
+            textElement = selectedItem;
+        }
+
+        if(!textElement) return;
+
+        const computed = window.getComputedStyle(textElement);
         let currentSize = parseFloat(computed.fontSize);
 
         currentSize += delta;
         // Keep font size within reasonable bounds
-        if(currentSize < 8) currentSize = 8;
+        if(currentSize < 6) currentSize = 6;
         if(currentSize > 72) currentSize = 72;
 
-        selectedItem.style.fontSize = currentSize + 'px';
+        textElement.style.fontSize = currentSize + 'px';
         updateMenuPos();
         saveState();
     }
