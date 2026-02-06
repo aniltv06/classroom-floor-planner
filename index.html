@@ -1185,6 +1185,10 @@
         const originalBgImage = container.style.backgroundImage;
         container.style.backgroundImage = 'none';
 
+        // Add border for downloaded image
+        const originalBorder = container.style.border;
+        container.style.border = '2px solid #333';
+
         // Use dom-to-image-more for better CSS support
         domtoimage.toPng(container, {
             bgcolor: '#ffffff',
@@ -1200,6 +1204,7 @@
 
             // Restore UI elements
             container.style.backgroundImage = originalBgImage;
+            container.style.border = originalBorder;
             rulers.forEach((r, i) => {
                 r.style.display = rulerDisplays[i];
             });
@@ -1218,6 +1223,7 @@
 
             // Restore UI elements on error
             container.style.backgroundImage = originalBgImage;
+            container.style.border = originalBorder;
             rulers.forEach((r, i) => {
                 r.style.display = rulerDisplays[i];
             });
