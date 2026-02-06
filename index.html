@@ -426,7 +426,7 @@
         <div class="btn-group">
             <button onclick="saveLayout()" title="Save to File">💾</button>
             <button onclick="document.getElementById('load-input').click()" title="Load from File">📂</button>
-            <input type="file" id="load-input" style="display:none" onchange="loadLayout(this)">
+            <input type="file" id="load-input" style="display:none" accept=".json,application/json" onchange="loadLayout(this)">
         </div>
         <div class="btn-group">
             <button onclick="addItem('bed')">🛏️ Bed</button>
@@ -624,6 +624,7 @@
     const settingsModal = document.getElementById("settings-modal");
     
     // Undo/Redo State
+    const MAX_HISTORY = 50; // Limit history to prevent memory leaks
     let history = [];
     let historyIndex = -1;
     let isUndoRedoAction = false;
@@ -659,6 +660,60 @@
         }
     });
 
+    // Close modal on backdrop click
+    settingsModal.addEventListener('click', (e) => {
+        if(e.target === settingsModal) {
+            toggleSettings();
+        }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Don't trigger shortcuts when typing in prompts
+        if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        // Delete key - delete selected item
+        if(e.key === 'Delete' || e.key === 'Backspace') {
+            if(selectedItem) {
+                e.preventDefault();
+                deleteItem();
+            }
+        }
+
+        // Ctrl/Cmd + Z - Undo
+        if((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            undo();
+        }
+
+        // Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y - Redo
+        if((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+            e.preventDefault();
+            redo();
+        }
+
+        // Ctrl/Cmd + D - Duplicate selected item
+        if((e.ctrlKey || e.metaKey) && e.key === 'd') {
+            e.preventDefault();
+            if(selectedItem) {
+                duplicateItem();
+            }
+        }
+
+        // Escape - Deselect
+        if(e.key === 'Escape') {
+            deselect();
+        }
+
+        // R - Rotate selected item
+        if(e.key === 'r' || e.key === 'R') {
+            if(selectedItem) {
+                e.preventDefault();
+                rotateItem();
+            }
+        }
+    });
+
     // --- Save & Load ---
     function saveLayout() {
         // Clone the container to clean it up before saving (remove rulers, etc if needed, but innerHTML is fine)
@@ -691,39 +746,72 @@
     function loadLayout(input) {
         const file = input.files[0];
         if(!file) return;
-        
+
+        // Validate file type
+        if(!file.name.endsWith('.json')) {
+            alert('Error: Please select a valid JSON file (.json)');
+            input.value = '';
+            return;
+        }
+
+        // Validate file size (max 10MB)
+        if(file.size > 10 * 1024 * 1024) {
+            alert('Error: File is too large (max 10MB)');
+            input.value = '';
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                
+
+                // Validate data structure
+                if(!data || typeof data !== 'object') {
+                    throw new Error('Invalid file format: Data must be an object');
+                }
+                if(!Array.isArray(data.items)) {
+                    throw new Error('Invalid file format: Missing items array');
+                }
+
                 // Clear existing items but KEEP rulers/grid structure
-                // Easiest is to select all .item and remove
                 document.querySelectorAll('.item').forEach(el => el.remove());
-                
-                // Add new items
-                if(data.items && Array.isArray(data.items)) {
-                    data.items.forEach(html => {
+
+                // Add new items with sanitization
+                let loadedCount = 0;
+                data.items.forEach(html => {
+                    try {
                         // Create a temp container to parse HTML string
                         const temp = document.createElement('div');
                         temp.innerHTML = html;
                         const newItem = temp.firstChild;
-                        container.appendChild(newItem);
-                    });
-                }
-                
+
+                        // Basic validation - must be a div with item class
+                        if(newItem && newItem.tagName === 'DIV' && newItem.classList.contains('item')) {
+                            container.appendChild(newItem);
+                            loadedCount++;
+                        }
+                    } catch(itemErr) {
+                        console.warn('Skipped invalid item:', itemErr);
+                    }
+                });
+
                 // Restore settings
-                if(data.borderWidth) {
-                    borderWidth = data.borderWidth;
+                if(data.borderWidth && typeof data.borderWidth === 'number') {
+                    borderWidth = Math.max(1, Math.min(3, data.borderWidth));
                     document.documentElement.style.setProperty('--item-border-width', borderWidth + 'px');
                 }
-                
+
                 rebindListeners();
                 saveState(); // Save loaded state to history
-                alert('Layout loaded successfully!');
+                alert(`Layout loaded successfully! ${loadedCount} items restored.`);
             } catch(err) {
-                alert('Error loading file: ' + err.message);
+                alert('Error loading file: ' + err.message + '\n\nPlease ensure you selected a valid classroom layout file.');
+                console.error('Load error:', err);
             }
+        };
+        reader.onerror = function() {
+            alert('Error: Failed to read file. Please try again.');
         };
         reader.readAsText(file);
         input.value = ''; // Reset input
@@ -739,7 +827,13 @@
         history = history.slice(0, historyIndex + 1);
         history.push(state);
         historyIndex++;
-        
+
+        // Limit history size to prevent memory leaks
+        if(history.length > MAX_HISTORY) {
+            history.shift();
+            historyIndex--;
+        }
+
         updateUndoRedoButtons();
     }
 
@@ -858,6 +952,10 @@
 
     // --- Item Management ---
     function makeDraggable(el) {
+        // Prevent duplicate listener attachment
+        if(el.dataset.draggableInit === 'true') return;
+        el.dataset.draggableInit = 'true';
+
         el.addEventListener('mousedown', dragStart);
         el.addEventListener('touchstart', dragStart, {passive: false});
         el.addEventListener('dblclick', () => { selectItem(el); renameItem(); });
@@ -899,16 +997,19 @@
 
     function duplicateItem() {
         if(!selectedItem) return;
-        
+
         const clone = selectedItem.cloneNode(true);
         clone.classList.remove('selected');
-        
+
+        // Clear the draggable flag so makeDraggable can rebind listeners
+        delete clone.dataset.draggableInit;
+
         // Offset position
         let top = parseInt(selectedItem.style.top) || 0;
         let left = parseInt(selectedItem.style.left) || 0;
         clone.style.top = (top + 20) + 'px';
         clone.style.left = (left + 20) + 'px';
-        
+
         container.appendChild(clone);
         makeDraggable(clone);
         selectItem(clone);
@@ -938,8 +1039,37 @@
         const w = Math.round(selectedItem.offsetWidth);
         const h = Math.round(selectedItem.offsetHeight);
         itemInfo.textContent = `X:${relX} Y:${relY} | W:${w} H:${h}`;
-        menu.style.top = (r.top - 120) + 'px'; 
-        menu.style.left = (r.left + r.width/2 - 90) + 'px';
+
+        // Calculate menu position with bounds checking
+        let menuTop = r.top - 120;
+        let menuLeft = r.left + r.width/2 - 90;
+
+        // Ensure menu stays within viewport
+        const menuHeight = 130; // Approximate menu height
+        const menuWidth = 180; // Approximate menu width
+
+        // Check top boundary
+        if(menuTop < 10) {
+            menuTop = r.bottom + 10; // Position below item instead
+        }
+
+        // Check bottom boundary
+        if(menuTop + menuHeight > window.innerHeight - 10) {
+            menuTop = window.innerHeight - menuHeight - 10;
+        }
+
+        // Check left boundary
+        if(menuLeft < 10) {
+            menuLeft = 10;
+        }
+
+        // Check right boundary
+        if(menuLeft + menuWidth > window.innerWidth - 10) {
+            menuLeft = window.innerWidth - menuWidth - 10;
+        }
+
+        menu.style.top = menuTop + 'px';
+        menu.style.left = menuLeft + 'px';
     }
 
     function rotateItem() {
@@ -1003,14 +1133,21 @@
             if(textNode && textNode.nodeType === 3) current = textNode.textContent.trim();
         }
         const newVal = prompt("Label:", current);
-        if(newVal) {
-            if(nameSpan) nameSpan.textContent = newVal;
+        if(newVal !== null && newVal.trim() !== '') {
+            // Sanitize input - remove HTML tags and limit length
+            const sanitized = newVal.trim()
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .substring(0, 100); // Limit to 100 characters
+
+            if(nameSpan) nameSpan.textContent = sanitized;
             else if(selectedItem.classList.contains('half-moon')) {
-                selectedItem.querySelector('span').textContent = newVal;
+                const span = selectedItem.querySelector('span');
+                if(span) span.textContent = sanitized;
             } else if(selectedItem.classList.contains('zone-text')) {
-                selectedItem.textContent = newVal;
+                selectedItem.textContent = sanitized;
             } else if(!selectedItem.querySelector('.door-panel')) {
-                selectedItem.textContent = newVal;
+                selectedItem.textContent = sanitized;
             }
             saveState();
         }
