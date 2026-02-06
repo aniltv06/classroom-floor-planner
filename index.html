@@ -785,6 +785,8 @@
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = room.content;
             tempDiv.querySelectorAll('.item').forEach(item => {
+                // Clear the draggable flag so listeners can be rebound
+                delete item.dataset.draggableInit;
                 container.appendChild(item);
             });
         }
@@ -1095,7 +1097,14 @@
     function saveState() {
         if(isUndoRedoAction) return;
         if(selectedItem) selectedItem.classList.remove('selected');
-        const state = container.innerHTML;
+
+        // Only save items, not structural elements
+        const items = [];
+        container.querySelectorAll('.item').forEach(el => {
+            items.push(el.outerHTML);
+        });
+        const state = items.join('');
+
         if(selectedItem) selectedItem.classList.add('selected');
 
         history = history.slice(0, historyIndex + 1);
@@ -1116,7 +1125,19 @@
         if(historyIndex > 0) {
             isUndoRedoAction = true;
             historyIndex--;
-            container.innerHTML = history[historyIndex];
+
+            // Clear items and restore from history
+            document.querySelectorAll('.item').forEach(el => el.remove());
+
+            if(history[historyIndex]) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = history[historyIndex];
+                tempDiv.querySelectorAll('.item').forEach(item => {
+                    delete item.dataset.draggableInit;
+                    container.appendChild(item);
+                });
+            }
+
             rebindListeners();
             deselect();
             updateUndoRedoButtons();
@@ -1128,7 +1149,19 @@
         if(historyIndex < history.length - 1) {
             isUndoRedoAction = true;
             historyIndex++;
-            container.innerHTML = history[historyIndex];
+
+            // Clear items and restore from history
+            document.querySelectorAll('.item').forEach(el => el.remove());
+
+            if(history[historyIndex]) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = history[historyIndex];
+                tempDiv.querySelectorAll('.item').forEach(item => {
+                    delete item.dataset.draggableInit;
+                    container.appendChild(item);
+                });
+            }
+
             rebindListeners();
             deselect();
             updateUndoRedoButtons();
