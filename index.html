@@ -373,65 +373,45 @@
             border-radius: 6px;
         }
         
-        .half-moon {
+        /* Arc-shaped items (tables and shelves) - shared styling */
+        .half-moon, .curved-shelf {
             width: 140px; height: 80px; background: transparent !important; border: none !important;
             display: flex; justify-content: center; align-items: flex-start; padding-top: 25px;
             position: relative;
             box-shadow: none !important; /* Remove square shadow */
         }
-        .half-moon svg {
+        .half-moon svg, .curved-shelf svg {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             overflow: visible; z-index: -1; pointer-events: none;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.06)) drop-shadow(0 1px 2px rgba(0,0,0,0.04));
         }
-        .half-moon:hover svg {
+        .half-moon:hover svg, .curved-shelf:hover svg {
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)) drop-shadow(0 2px 4px rgba(0,0,0,0.06));
         }
-        .half-moon.selected svg {
+        .half-moon.selected svg, .curved-shelf.selected svg {
             filter: drop-shadow(0 8px 16px rgba(74, 144, 226, 0.25)) drop-shadow(0 4px 8px rgba(0,0,0,0.1));
         }
-        .half-moon path { stroke-width: var(--item-border-width); vector-effect: non-scaling-stroke; }
-        .half-moon span {
+        .half-moon path, .curved-shelf path {
+            stroke-width: var(--item-border-width);
+            vector-effect: non-scaling-stroke;
+        }
+        .half-moon span, .curved-shelf span {
             font-size: 14px;
             pointer-events: none;
             font-weight: 700;
             z-index: 1;
             color: #2c3e50;
         }
-
-        .curved-shelf {
-            width: 140px; height: 80px; background: transparent !important; border: none !important;
-            display: flex; justify-content: center; align-items: flex-start; padding-top: 25px;
-            position: relative;
-            box-shadow: none !important; /* Remove square shadow */
-        }
-        .curved-shelf svg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            overflow: visible; z-index: -1; pointer-events: none;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.06)) drop-shadow(0 1px 2px rgba(0,0,0,0.04));
-        }
-        .curved-shelf:hover svg {
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)) drop-shadow(0 2px 4px rgba(0,0,0,0.06));
-        }
-        .curved-shelf.selected svg {
-            filter: drop-shadow(0 8px 16px rgba(74, 144, 226, 0.25)) drop-shadow(0 4px 8px rgba(0,0,0,0.1));
-        }
-        .curved-shelf path { stroke-width: var(--item-border-width); vector-effect: non-scaling-stroke; }
-        .curved-shelf span {
-            font-size: 14px;
-            pointer-events: none;
-            font-weight: 700;
-            z-index: 1;
-            color: #2c3e50;
-        }
-        .curved-shelf.vertical {
+        .half-moon.vertical, .curved-shelf.vertical {
             align-items: center;
             padding-top: 0;
             padding-left: 0;
             justify-content: center;
         }
-        .curved-shelf.vertical svg { transform: rotate(90deg); }
-        .curved-shelf.vertical span {
+        .half-moon.vertical svg, .curved-shelf.vertical svg {
+            transform: rotate(90deg);
+        }
+        .half-moon.vertical span, .curved-shelf.vertical span {
             writing-mode: vertical-rl;
             text-orientation: mixed;
         }
@@ -468,17 +448,6 @@
 
         /* Helpers */
         .bed.vertical { }
-        .half-moon.vertical {
-            align-items: center;
-            padding-top: 0;
-            padding-left: 0;
-            justify-content: center;
-        }
-        .half-moon.vertical svg { transform: rotate(90deg); }
-        .half-moon.vertical span {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-        }
         .window.vertical { width: 15px; height: 100px; }
         .window.vertical::after { top: 50%; left: 0; right: 0; height: 2px; width: auto; transform: translateY(-50%); }
         .window.vertical span {
