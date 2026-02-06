@@ -713,6 +713,11 @@
 
     // --- Multi-Room Management ---
     function createRoom(name, loadDefault = false) {
+        // Save current room state BEFORE creating new room
+        if(currentRoomId !== null) {
+            saveCurrentRoomState();
+        }
+
         const roomId = roomIdCounter++;
         const newRoom = {
             id: roomId,
@@ -724,6 +729,7 @@
         };
 
         rooms.push(newRoom);
+        const previousRoomId = currentRoomId;
         currentRoomId = roomId;
 
         // Load default layout if requested
@@ -732,9 +738,15 @@
         } else {
             // Clear canvas
             document.querySelectorAll('.item').forEach(el => el.remove());
+            rebindListeners();
         }
 
-        saveCurrentRoomState();
+        // Initialize new room's history
+        history = [];
+        historyIndex = -1;
+        saveState(); // Save initial state
+        updateUndoRedoButtons();
+
         return roomId;
     }
 
@@ -755,12 +767,19 @@
         borderWidth = room.borderWidth;
         document.documentElement.style.setProperty('--item-border-width', borderWidth + 'px');
 
-        // Load room content
+        // Clear only items, keep structural elements
         document.querySelectorAll('.item').forEach(el => el.remove());
-        container.innerHTML = room.content;
 
-        // Re-initialize rulers and rebind listeners
-        initRulers();
+        // Restore room items
+        if(room.content) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = room.content;
+            tempDiv.querySelectorAll('.item').forEach(item => {
+                container.appendChild(item);
+            });
+        }
+
+        // Rebind listeners
         rebindListeners();
         deselect();
         updateUndoRedoButtons();
@@ -810,7 +829,12 @@
         const room = rooms.find(r => r.id === currentRoomId);
         if(!room) return;
 
-        room.content = container.innerHTML;
+        // Only save items, not structural elements (rulers, grid, etc)
+        const items = [];
+        container.querySelectorAll('.item').forEach(el => {
+            items.push(el.outerHTML);
+        });
+        room.content = items.join('');
         room.borderWidth = borderWidth;
         room.history = [...history];
         room.historyIndex = historyIndex;
@@ -878,7 +902,12 @@
         }
 
         rebindListeners();
+
+        // Initialize history for new room
+        history = [];
+        historyIndex = -1;
         saveState();
+        updateUndoRedoButtons();
     }
 
     // --- Save & Load ---
@@ -900,10 +929,13 @@
 
         // Extract items for each room
         rooms.forEach((room, index) => {
-            const tempContainer = document.createElement('div');
-            tempContainer.innerHTML = room.content;
-            const items = tempContainer.querySelectorAll('.item');
-            projectData.rooms[index].items = Array.from(items).map(el => el.outerHTML);
+            const items = [];
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = room.content;
+            tempDiv.querySelectorAll('.item').forEach(el => {
+                items.push(el.outerHTML);
+            });
+            projectData.rooms[index].items = items;
         });
 
         const blob = new Blob([JSON.stringify(projectData)], {type: 'application/json'});
@@ -988,19 +1020,19 @@
                 historyIndex: -1
             };
 
-            // Build room content from items
-            const tempContainer = document.createElement('div');
+            // Build room content from items (store as concatenated HTML)
+            const items = [];
             if(roomData.items && Array.isArray(roomData.items)) {
                 roomData.items.forEach(html => {
                     const temp = document.createElement('div');
                     temp.innerHTML = html;
                     const item = temp.firstChild;
                     if(item && item.tagName === 'DIV' && item.classList.contains('item')) {
-                        tempContainer.appendChild(item);
+                        items.push(item.outerHTML);
                     }
                 });
             }
-            room.content = tempContainer.innerHTML;
+            room.content = items.join('');
 
             rooms.push(room);
         });
