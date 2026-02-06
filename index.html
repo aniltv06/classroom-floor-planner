@@ -1747,11 +1747,28 @@
         // Clear the draggable flag so makeDraggable can rebind listeners
         delete clone.dataset.draggableInit;
 
+        // Check if item is a door or window (can be on borders)
+        const isDoorOrWindow = clone.classList.contains('door') || clone.classList.contains('window');
+        const margin = isDoorOrWindow ? 0 : 8;
+
         // Offset position
         let top = parseInt(selectedItem.style.top) || 0;
         let left = parseInt(selectedItem.style.left) || 0;
-        clone.style.top = (top + 20) + 'px';
-        clone.style.left = (left + 20) + 'px';
+
+        // Proposed new position
+        let newTop = top + 20;
+        let newLeft = left + 20;
+
+        // Get dimensions
+        const width = selectedItem.offsetWidth;
+        const height = selectedItem.offsetHeight;
+
+        // Apply boundary constraints
+        newLeft = Math.max(margin, Math.min(newLeft, 900 - width - margin));
+        newTop = Math.max(margin, Math.min(newTop, 700 - height - margin));
+
+        clone.style.top = newTop + 'px';
+        clone.style.left = newLeft + 'px';
 
         container.appendChild(clone);
         makeDraggable(clone);
@@ -1863,6 +1880,23 @@
                 selectedItem.style.height = w;
             }
         }
+
+        // After rotation, ensure item doesn't exceed boundaries
+        const isDoorOrWindow = selectedItem.classList.contains('door') || selectedItem.classList.contains('window');
+        const margin = isDoorOrWindow ? 0 : 8;
+
+        let currentLeft = parseInt(selectedItem.style.left) || 0;
+        let currentTop = parseInt(selectedItem.style.top) || 0;
+        const width = selectedItem.offsetWidth;
+        const height = selectedItem.offsetHeight;
+
+        // Adjust position if item now exceeds boundaries
+        currentLeft = Math.max(margin, Math.min(currentLeft, 900 - width - margin));
+        currentTop = Math.max(margin, Math.min(currentTop, 700 - height - margin));
+
+        selectedItem.style.left = currentLeft + 'px';
+        selectedItem.style.top = currentTop + 'px';
+
         updateMenuPos();
         saveState();
     }
@@ -1890,8 +1924,29 @@
         const isVert = selectedItem.classList.contains('vertical');
         if (axis === 'w') { if (isVert) currH += delta; else currW += delta; }
         else { if (isVert) currW += delta; else currH += delta; }
-        if(currW < 20) currW = 20; if(currH < 20) currH = 20;
-        selectedItem.style.width = currW + 'px'; selectedItem.style.height = currH + 'px';
+
+        // Minimum size
+        if(currW < 20) currW = 20;
+        if(currH < 20) currH = 20;
+
+        // Check if item is a door or window (can be on borders)
+        const isDoorOrWindow = selectedItem.classList.contains('door') || selectedItem.classList.contains('window');
+        const margin = isDoorOrWindow ? 0 : 8;
+
+        // Get current position
+        const currentLeft = parseInt(selectedItem.style.left) || 0;
+        const currentTop = parseInt(selectedItem.style.top) || 0;
+
+        // Calculate max allowed dimensions based on position and margins
+        const maxW = 900 - currentLeft - margin;
+        const maxH = 700 - currentTop - margin;
+
+        // Constrain to max dimensions
+        if(currW > maxW) currW = maxW;
+        if(currH > maxH) currH = maxH;
+
+        selectedItem.style.width = currW + 'px';
+        selectedItem.style.height = currH + 'px';
         updateMenuPos();
         saveState();
     }
@@ -2071,8 +2126,17 @@
         let y = clientY - cRect.top - offset.y;
         x = Math.round(x / 24) * 24;
         y = Math.round(y / 24) * 24;
-        x = Math.max(0, Math.min(x, cRect.width - activeItem.offsetWidth));
-        y = Math.max(0, Math.min(y, cRect.height - activeItem.offsetHeight));
+
+        // Check if item is a door or window (can be on borders)
+        const isDoorOrWindow = activeItem.classList.contains('door') || activeItem.classList.contains('window');
+
+        // Set margin based on item type
+        const margin = isDoorOrWindow ? 0 : 8; // 8px margin for furniture items
+
+        // Apply constraints with appropriate margins
+        x = Math.max(margin, Math.min(x, cRect.width - activeItem.offsetWidth - margin));
+        y = Math.max(margin, Math.min(y, cRect.height - activeItem.offsetHeight - margin));
+
         activeItem.style.left = x + 'px';
         activeItem.style.top = y + 'px';
     }
