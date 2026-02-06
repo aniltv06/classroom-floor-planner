@@ -727,6 +727,8 @@
     let selectedItem = null;
     let offset = {x:0, y:0};
     let borderWidth = 1;
+    let lastClickTime = 0;
+    let lastClickTarget = null;
 
     // --- Init ---
     initRulers();
@@ -1438,7 +1440,12 @@
 
         el.addEventListener('mousedown', dragStart);
         el.addEventListener('touchstart', dragStart, {passive: false});
-        el.addEventListener('dblclick', () => { selectItem(el); renameItem(); });
+        el.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            selectItem(el);
+            renameItem();
+        });
     }
 
     function addItem(type) {
@@ -1770,6 +1777,22 @@
     // --- Drag Logic ---
     function dragStart(e) {
         if(e.target.closest('#context-menu') || e.target.closest('#settings-modal')) return;
+
+        // Detect double-click to prevent drag
+        const now = Date.now();
+        const timeSinceLastClick = now - lastClickTime;
+        const isSameTarget = e.currentTarget === lastClickTarget;
+
+        // If it's a double-click (within 300ms on same target), don't start drag
+        if (timeSinceLastClick < 300 && isSameTarget) {
+            lastClickTime = 0; // Reset to prevent triple-click issues
+            lastClickTarget = null;
+            return;
+        }
+
+        lastClickTime = now;
+        lastClickTarget = e.currentTarget;
+
         e.preventDefault();
         activeItem = e.currentTarget;
         selectItem(activeItem);
