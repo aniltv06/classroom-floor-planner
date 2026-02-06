@@ -76,6 +76,7 @@
         }
 
         button:hover { background: #e5e5ea; transform: translateY(-1px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         
         button.primary {
             background: #007aff;
@@ -223,7 +224,17 @@
             flex-direction: column;
             justify-content: flex-start;
         }
-        
+        .bed::before {
+            content: ''; position: absolute; left: 5px; top: 5px; bottom: 5px; width: 15px;
+            background: rgba(255,255,255,0.6); 
+            border: var(--item-border-width) solid rgba(0,0,0,0.1); 
+            border-radius: 2px;
+        }
+        .bed.vertical::before { left: 5px; right: 5px; top: 5px; bottom: auto; height: 15px; width: auto; }
+        .bed .label-container { margin-left: 20px; display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+        .bed.vertical .label-container { margin-left: 0; margin-top: 20px; }
+        .type-label { font-size: 9px; opacity: 0.6; font-weight: 400; text-transform: uppercase; }
+
         /* Pillow Box */
         .bed .pillow {
             position: absolute;
@@ -238,19 +249,15 @@
         .bed:not(.vertical) .pillow { left: 4px; top: 4px; bottom: 4px; width: 24px; }
         .bed.vertical .pillow { top: 4px; left: 4px; right: 4px; height: 24px; width: auto; }
 
-        /* 'Bed' Text inside Pillow */
         .bed .pillow span {
             font-size: 9px;
             color: #444;
             text-transform: uppercase;
-            font-weight: 900; /* Extra Bold */
+            font-weight: 900; 
             transform: rotate(-90deg);
         }
-        .bed.vertical .pillow span {
-            transform: none; 
-        }
+        .bed.vertical .pillow span { transform: none; }
 
-        /* Name Label */
         .bed .name {
             font-size: 11px;
             font-weight: 600;
@@ -413,6 +420,15 @@
     
     <div class="toolbar">
         <div class="btn-group">
+            <button onclick="undo()" id="btn-undo" title="Undo">↶</button>
+            <button onclick="redo()" id="btn-redo" title="Redo">↷</button>
+        </div>
+        <div class="btn-group">
+            <button onclick="saveLayout()" title="Save to File">💾</button>
+            <button onclick="document.getElementById('load-input').click()" title="Load from File">📂</button>
+            <input type="file" id="load-input" style="display:none" onchange="loadLayout(this)">
+        </div>
+        <div class="btn-group">
             <button onclick="addItem('bed')">🛏️ Bed</button>
             <button onclick="addItem('shelf')">📚 Shelf</button>
             <button onclick="addItem('table')">🔲 Table</button>
@@ -573,6 +589,7 @@
 
     <div class="menu-row">
         <button onclick="rotateItem()" title="Rotate 90°">↻</button>
+        <button onclick="duplicateItem()" title="Duplicate">📑</button>
         <button onclick="renameItem()" title="Rename">✎</button>
         <button style="color:red;" onclick="deleteItem()" title="Delete">🗑️</button>
     </div>
@@ -606,15 +623,25 @@
     const centerMarker = document.getElementById("center-marker");
     const settingsModal = document.getElementById("settings-modal");
     
+    // Undo/Redo State
+    let history = [];
+    let historyIndex = -1;
+    let isUndoRedoAction = false;
+
     let activeItem = null;
     let selectedItem = null;
     let offset = {x:0, y:0};
-    
     let borderWidth = 1;
 
     // --- Init ---
     initRulers();
-    document.querySelectorAll('.item').forEach(makeDraggable);
+    saveState(); // Initial save
+    
+    // Re-bind listeners function
+    function rebindListeners() {
+        document.querySelectorAll('.item').forEach(makeDraggable);
+    }
+    rebindListeners();
     
     document.getElementById('workspace').addEventListener('mousedown', (e) => {
         if(e.target.id === 'workspace') deselect();
@@ -632,12 +659,126 @@
         }
     });
 
+    // --- Save & Load ---
+    function saveLayout() {
+        // Clone the container to clean it up before saving (remove rulers, etc if needed, but innerHTML is fine)
+        // We really just want the items.
+        // A better approach for robust app is JSON model, but for this tool, saving the items HTML structure is simple.
+        // We will save the innerHTML of canvas-container *minus* the grid/ruler elements if we want to be clean,
+        // OR we just save the whole innerHTML and when loading, we restore and re-init rulers.
+        
+        // Actually, let's just save the "items" specifically.
+        const items = [];
+        document.querySelectorAll('.item').forEach(el => {
+            items.push(el.outerHTML);
+        });
+        
+        const data = {
+            items: items,
+            borderWidth: borderWidth
+        };
+        
+        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'classroom-layout.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function loadLayout(input) {
+        const file = input.files[0];
+        if(!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                // Clear existing items but KEEP rulers/grid structure
+                // Easiest is to select all .item and remove
+                document.querySelectorAll('.item').forEach(el => el.remove());
+                
+                // Add new items
+                if(data.items && Array.isArray(data.items)) {
+                    data.items.forEach(html => {
+                        // Create a temp container to parse HTML string
+                        const temp = document.createElement('div');
+                        temp.innerHTML = html;
+                        const newItem = temp.firstChild;
+                        container.appendChild(newItem);
+                    });
+                }
+                
+                // Restore settings
+                if(data.borderWidth) {
+                    borderWidth = data.borderWidth;
+                    document.documentElement.style.setProperty('--item-border-width', borderWidth + 'px');
+                }
+                
+                rebindListeners();
+                saveState(); // Save loaded state to history
+                alert('Layout loaded successfully!');
+            } catch(err) {
+                alert('Error loading file: ' + err.message);
+            }
+        };
+        reader.readAsText(file);
+        input.value = ''; // Reset input
+    }
+
+    // --- History System ---
+    function saveState() {
+        if(isUndoRedoAction) return;
+        if(selectedItem) selectedItem.classList.remove('selected');
+        const state = container.innerHTML;
+        if(selectedItem) selectedItem.classList.add('selected');
+
+        history = history.slice(0, historyIndex + 1);
+        history.push(state);
+        historyIndex++;
+        
+        updateUndoRedoButtons();
+    }
+
+    function undo() {
+        if(historyIndex > 0) {
+            isUndoRedoAction = true;
+            historyIndex--;
+            container.innerHTML = history[historyIndex];
+            rebindListeners();
+            deselect();
+            updateUndoRedoButtons();
+            isUndoRedoAction = false;
+        }
+    }
+
+    function redo() {
+        if(historyIndex < history.length - 1) {
+            isUndoRedoAction = true;
+            historyIndex++;
+            container.innerHTML = history[historyIndex];
+            rebindListeners();
+            deselect();
+            updateUndoRedoButtons();
+            isUndoRedoAction = false;
+        }
+    }
+
+    function updateUndoRedoButtons() {
+        document.getElementById('btn-undo').disabled = historyIndex <= 0;
+        document.getElementById('btn-redo').disabled = historyIndex >= history.length - 1;
+    }
+
     // --- Global Settings ---
     function toggleSettings() {
         settingsModal.style.display = (settingsModal.style.display === 'flex') ? 'none' : 'flex';
     }
     
     function updateGlobalColor(type, color) {
+        saveState();
         let selector = '';
         if(type === 'bed') selector = '.bed';
         else if(type === 'shelf') selector = '.shelf';
@@ -660,6 +801,9 @@
         const bottomRuler = document.getElementById('ruler-bottom');
         const leftRuler = document.getElementById('ruler-left');
         const rightRuler = document.getElementById('ruler-right');
+        
+        // Clear existing to prevent duplicates on re-init
+        topRuler.innerHTML = ''; bottomRuler.innerHTML = ''; leftRuler.innerHTML = ''; rightRuler.innerHTML = '';
         
         for(let i=0; i<39; i+=5) {
             addMark(topRuler, 'x', i);
@@ -750,6 +894,25 @@
         container.appendChild(el);
         makeDraggable(el);
         selectItem(el);
+        saveState();
+    }
+
+    function duplicateItem() {
+        if(!selectedItem) return;
+        
+        const clone = selectedItem.cloneNode(true);
+        clone.classList.remove('selected');
+        
+        // Offset position
+        let top = parseInt(selectedItem.style.top) || 0;
+        let left = parseInt(selectedItem.style.left) || 0;
+        clone.style.top = (top + 20) + 'px';
+        clone.style.left = (left + 20) + 'px';
+        
+        container.appendChild(clone);
+        makeDraggable(clone);
+        selectItem(clone);
+        saveState();
     }
 
     function selectItem(el) {
@@ -770,15 +933,11 @@
     function updateMenuPos() {
         if(!selectedItem) return;
         const r = selectedItem.getBoundingClientRect();
-        
-        // Relative coords
         const relX = Math.round(selectedItem.offsetLeft);
         const relY = Math.round(selectedItem.offsetTop);
         const w = Math.round(selectedItem.offsetWidth);
         const h = Math.round(selectedItem.offsetHeight);
-        
         itemInfo.textContent = `X:${relX} Y:${relY} | W:${w} H:${h}`;
-
         menu.style.top = (r.top - 120) + 'px'; 
         menu.style.left = (r.left + r.width/2 - 90) + 'px';
     }
@@ -790,15 +949,16 @@
         selectedItem.setAttribute('data-r', newRot);
         if (selectedItem.classList.contains('door') || selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('zone-text')) {
             selectedItem.style.transform = `rotate(${newRot}deg)`;
-            return;
-        }
-        selectedItem.classList.toggle('vertical');
-        if(selectedItem.style.width && selectedItem.style.height) {
-            const w = selectedItem.style.width;
-            selectedItem.style.width = selectedItem.style.height;
-            selectedItem.style.height = w;
+        } else {
+            selectedItem.classList.toggle('vertical');
+            if(selectedItem.style.width && selectedItem.style.height) {
+                const w = selectedItem.style.width;
+                selectedItem.style.width = selectedItem.style.height;
+                selectedItem.style.height = w;
+            }
         }
         updateMenuPos();
+        saveState();
     }
     
     function changeColor(bg, border) {
@@ -813,6 +973,7 @@
             selectedItem.style.backgroundColor = bg;
             selectedItem.style.borderColor = border;
         }
+        saveState();
     }
 
     function scaleItem(axis, delta) {
@@ -826,6 +987,7 @@
         if(currW < 20) currW = 20; if(currH < 20) currH = 20;
         selectedItem.style.width = currW + 'px'; selectedItem.style.height = currH + 'px';
         updateMenuPos();
+        saveState();
     }
 
     function renameItem() {
@@ -840,7 +1002,6 @@
             const textNode = selectedItem.childNodes[0];
             if(textNode && textNode.nodeType === 3) current = textNode.textContent.trim();
         }
-        
         const newVal = prompt("Label:", current);
         if(newVal) {
             if(nameSpan) nameSpan.textContent = newVal;
@@ -851,6 +1012,7 @@
             } else if(!selectedItem.querySelector('.door-panel')) {
                 selectedItem.textContent = newVal;
             }
+            saveState();
         }
     }
 
@@ -858,6 +1020,7 @@
         if(selectedItem && confirm("Delete item?")) {
             selectedItem.remove();
             deselect();
+            saveState();
         }
     }
 
@@ -899,6 +1062,7 @@
             updateMenuPos();
             menu.style.display = 'flex';
             activeItem = null;
+            saveState(); // Save after drag
         }
         document.removeEventListener('mousemove', drag);
         document.removeEventListener('mouseup', dragEnd);
