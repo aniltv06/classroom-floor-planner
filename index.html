@@ -355,12 +355,19 @@
         }
 
         .window {
-            background-color: var(--c-window); 
-            border: calc(var(--item-border-width) + 1px) solid #555; 
+            background-color: var(--c-window);
+            border: calc(var(--item-border-width) + 1px) solid #555;
             border-left: 1px solid #555; border-right: 1px solid #555;
             width: 100px; height: 15px; box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 9px;
+            font-weight: 600;
+            color: #333;
         }
-        .window::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #555; transform: translateX(-50%); }
+        .window::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #555; transform: translateX(-50%); z-index: 0; }
+        .window span { position: relative; z-index: 1; pointer-events: none; }
 
         /* Helpers */
         .bed.vertical { }
@@ -377,6 +384,10 @@
         }
         .window.vertical { width: 15px; height: 100px; }
         .window.vertical::after { top: 50%; left: 0; right: 0; height: 2px; width: auto; transform: translateY(-50%); }
+        .window.vertical span {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
 
         /* Zone Text Item */
         .zone-text {
@@ -1485,7 +1496,7 @@
                         <span style="font-size:14px; pointer-events:none; font-weight:700;">Shelf</span>`;
                 break;
             case 'door': cls += 'door'; html = '<div class="door-panel"></div><div class="door-swing"></div>'; break;
-            case 'window': cls += 'window'; break;
+            case 'window': cls += 'window'; html = '<span>Window</span>'; break;
             case 'text':
                 cls += 'zone-text';
                 html = 'Text Label';
@@ -1536,7 +1547,8 @@
                         el.classList.contains('shelf') ||
                         el.classList.contains('table-rect') ||
                         el.classList.contains('half-moon') ||
-                        el.classList.contains('curved-shelf');
+                        el.classList.contains('curved-shelf') ||
+                        el.classList.contains('window');
         if(hasText) {
             fontSizeControls.style.display = 'flex';
         } else {
@@ -1670,7 +1682,7 @@
             textElement = selectedItem;
         } else if(selectedItem.classList.contains('bed')) {
             textElement = selectedItem.querySelector('.name');
-        } else if(selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('curved-shelf')) {
+        } else if(selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('curved-shelf') || selectedItem.classList.contains('window')) {
             textElement = selectedItem.querySelector('span');
         } else if(selectedItem.classList.contains('shelf') || selectedItem.classList.contains('table-rect')) {
             // For shelf and table-rect, set font size on the element itself
@@ -1700,6 +1712,9 @@
             current = selectedItem.textContent;
         } else if(nameSpan) {
             current = nameSpan.textContent;
+        } else if(selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('curved-shelf') || selectedItem.classList.contains('window')) {
+            const span = selectedItem.querySelector('span');
+            if(span) current = span.textContent.trim();
         } else {
             const textNode = selectedItem.childNodes[0];
             if(textNode && textNode.nodeType === 3) current = textNode.textContent.trim();
@@ -1713,7 +1728,7 @@
                 .substring(0, 100); // Limit to 100 characters
 
             if(nameSpan) nameSpan.textContent = sanitized;
-            else if(selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('curved-shelf')) {
+            else if(selectedItem.classList.contains('half-moon') || selectedItem.classList.contains('curved-shelf') || selectedItem.classList.contains('window')) {
                 const span = selectedItem.querySelector('span');
                 if(span) span.textContent = sanitized;
             } else if(selectedItem.classList.contains('zone-text')) {
@@ -1800,10 +1815,22 @@
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-        // Use offsetLeft/offsetTop for accurate positioning with transforms and padding
+        // Calculate offset from where the mouse is relative to the item's position
+        // This accounts for clicking anywhere within the item, including with padding/transforms
         const cRect = container.getBoundingClientRect();
-        offset.x = clientX - cRect.left - activeItem.offsetLeft;
-        offset.y = clientY - cRect.top - activeItem.offsetTop;
+        const itemRect = activeItem.getBoundingClientRect();
+
+        // Mouse position relative to container
+        const mouseX = clientX - cRect.left;
+        const mouseY = clientY - cRect.top;
+
+        // Item position relative to container (using offsetLeft/offsetTop which are pre-transform)
+        const itemX = activeItem.offsetLeft;
+        const itemY = activeItem.offsetTop;
+
+        // Calculate offset as the difference between mouse position and item position
+        offset.x = mouseX - itemX;
+        offset.y = mouseY - itemY;
 
         document.addEventListener('mousemove', drag);
         document.addEventListener('mouseup', dragEnd);
