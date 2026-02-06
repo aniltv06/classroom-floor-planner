@@ -299,10 +299,17 @@
         
         .half-moon {
             width: 140px; height: 80px; background: transparent; border: none;
-            display: flex; justify-content: center; align-items: flex-start; padding-top: 25px; 
+            display: flex; justify-content: center; align-items: flex-start; padding-top: 25px;
+            position: relative;
         }
         .half-moon svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; z-index: -1; }
         .half-moon path { stroke-width: var(--item-border-width); vector-effect: non-scaling-stroke; }
+        .half-moon span {
+            font-size: 11px;
+            pointer-events: none;
+            font-weight: 600;
+            z-index: 1;
+        }
 
         .door { width: 60px; height: 60px; pointer-events: auto; background: transparent !important; border:none !important; }
         .door-panel {
@@ -329,8 +336,17 @@
 
         /* Helpers */
         .bed.vertical { }
-        .half-moon.vertical { align-items: center; padding-top: 0; padding-left: 0; } 
+        .half-moon.vertical {
+            align-items: center;
+            padding-top: 0;
+            padding-left: 0;
+            justify-content: center;
+        }
         .half-moon.vertical svg { transform: rotate(90deg); }
+        .half-moon.vertical span {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
         .window.vertical { width: 15px; height: 100px; }
         .window.vertical::after { top: 50%; left: 0; right: 0; height: 2px; width: auto; transform: translateY(-50%); }
 
@@ -1522,7 +1538,47 @@
     }
 
     function deleteItem() {
-        if(selectedItem && confirm("Delete item?")) {
+        if(!selectedItem) return;
+
+        // Get item description for confirmation message
+        let itemDescription = 'this item';
+        let itemType = '';
+
+        // Determine item type
+        if(selectedItem.classList.contains('bed')) itemType = 'bed';
+        else if(selectedItem.classList.contains('shelf')) itemType = 'shelf';
+        else if(selectedItem.classList.contains('table-rect')) itemType = 'table';
+        else if(selectedItem.classList.contains('half-moon')) itemType = 'arc table';
+        else if(selectedItem.classList.contains('door')) itemType = 'door';
+        else if(selectedItem.classList.contains('window')) itemType = 'window';
+        else if(selectedItem.classList.contains('zone-text')) itemType = 'text label';
+
+        // Get item label
+        let itemLabel = '';
+        const nameSpan = selectedItem.querySelector('.name');
+        if(nameSpan) {
+            itemLabel = nameSpan.textContent.trim();
+        } else if(selectedItem.classList.contains('half-moon')) {
+            const span = selectedItem.querySelector('span');
+            if(span) itemLabel = span.textContent.trim();
+        } else if(selectedItem.classList.contains('zone-text')) {
+            itemLabel = selectedItem.textContent.trim();
+        } else {
+            // For other items, get first text node
+            const textNode = selectedItem.childNodes[0];
+            if(textNode && textNode.nodeType === 3) {
+                itemLabel = textNode.textContent.trim();
+            }
+        }
+
+        // Build confirmation message
+        if(itemType && itemLabel) {
+            itemDescription = `${itemType} "${itemLabel}"`;
+        } else if(itemType) {
+            itemDescription = `this ${itemType}`;
+        }
+
+        if(confirm(`Delete ${itemDescription}?`)) {
             selectedItem.remove();
             deselect();
             saveState();
