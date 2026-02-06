@@ -2385,22 +2385,8 @@
         const hasTransform = activeItem.style.transform && activeItem.style.transform.includes('rotate');
 
         if (hasTransform) {
-            // Use stored transform offset calculated at drag start
-            const itemRect = activeItem.getBoundingClientRect();
-            const itemWidth = itemRect.width;
-            const itemHeight = itemRect.height;
-
-            // Calculate where the visual element would be if we set style position to (x, y)
-            const visualLeft = x + transformOffset.x;
-            const visualTop = y + transformOffset.y;
-
-            // Constrain visual position
-            const constrainedVisualLeft = Math.max(margin, Math.min(visualLeft, cRect.width - itemWidth - margin));
-            const constrainedVisualTop = Math.max(margin, Math.min(visualTop, cRect.height - itemHeight - margin));
-
-            // Calculate style position needed to achieve constrained visual position
-            x = constrainedVisualLeft - transformOffset.x;
-            y = constrainedVisualTop - transformOffset.y;
+            // Temporarily disable constraints for rotated items to debug
+            // Just allow any position
         } else {
             // For non-rotated items, use normal constraints
             const itemWidth = activeItem.offsetWidth;
